@@ -4,7 +4,6 @@ extern crate futures_cpupool;
 extern crate hyper;
 #[macro_use]
 extern crate lazy_static;
-extern crate mime as hypermime;
 
 // 3rd party
 
@@ -18,6 +17,7 @@ use futures_cpupool::CpuPool;
 use hyper::{Method, StatusCode};
 use hyper::server::{Request, Response};
 use hyper::header::{self, Encoding};
+use hyper::mime as hypermime;
 
 use flate2::Compression;
 use flate2::write::GzEncoder;
