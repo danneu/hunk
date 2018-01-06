@@ -13,27 +13,22 @@ extern crate toml;
 
 // 3rd party
 
-use futures::Sink;
-use futures::Future;
-use futures::Stream;
-use futures::stream;
-
+use futures::{Sink, Future, Stream, stream};
 use futures_cpupool::CpuPool;
 
-use hyper::{Method, StatusCode};
+use hyper::{Chunk, Method, StatusCode};
 use hyper::server::{Request, Response};
-use hyper::header::{self, Encoding};
+use hyper::header;
 use hyper::mime as hypermime;
 
-use flate2::Compression;
 use flate2::write::GzEncoder;
 
-use std::str::FromStr;
+use std::fs::File;
 use std::sync::Arc;
 use std::io::{self, Write};
 use std::ops::Range;
-use std::time::{self, Duration, SystemTime};
-use std::path::{Component, Path, PathBuf};
+use std::time;
+use std::path::{self, Path, PathBuf};
 use std::os::unix::fs::FileExt;
 use std::collections::HashSet;
 
@@ -65,103 +60,56 @@ impl HttpService {
     }
 }
 
-trait Entity: 'static + Send {
-    type Chunk: 'static + Send + AsRef<[u8]> + From<Vec<u8>> + From<&'static [u8]>;
-    type Body: 'static
-        + Send
-        + Stream<Item = Self::Chunk, Error = hyper::Error>
-        + From<Box<Stream<Item = Self::Chunk, Error = hyper::Error> + Send>>;
+type ChunkStream = Box<Stream<Item = Chunk, Error = hyper::Error> + Send>;
 
-    /// Returns the length of the entity in bytes.
-    fn len(&self) -> u64;
-
-    /// Gets the body bytes indicated by `range`.
-    fn get_range(&self, range: Range<u64>) -> Self::Body;
-
-    fn last_modified(&self) -> Option<header::HttpDate>;
-
-    fn etag(&self) -> header::EntityTag;
-
-    fn content_type(&self) -> &hypermime::Mime;
+trait ChunkStreamable {
+    fn get_range(&self, range: Range<u64>) -> ChunkStream;
 }
 
-#[derive(Clone)]
-pub struct ChunkedFile<B, C> {
-    // Arc lets us move across threads.
-    inner: Arc<ChunkedFileInner>,
-    phantom: ::std::marker::PhantomData<(B, C)>,
-}
-
-struct ChunkedFileInner {
+struct ResourceInner {
     len: u64,
-    mtime: SystemTime,
+    mtime: time::SystemTime,
     content_type: ::hypermime::Mime,
-    f: std::fs::File,
+    file: File,
     pool: CpuPool,
 }
 
-impl<B, C> ChunkedFile<B, C> {
-    pub fn new(
-        file: ::std::fs::File,
-        pool: CpuPool,
-        content_type: ::hypermime::Mime,
-    ) -> Result<Self, io::Error> {
+#[derive(Clone)]
+struct Resource {
+    inner: Arc<ResourceInner>,
+}
+
+impl Resource {
+    fn new(file: File, pool: CpuPool, content_type: hypermime::Mime) -> Result<Self, io::Error> {
         let m = file.metadata()?;
-        Ok(ChunkedFile {
-            inner: Arc::new(ChunkedFileInner {
+        Ok(Resource {
+            inner: Arc::new(ResourceInner {
                 len: m.len(),
                 mtime: m.modified()?,
-                content_type,
-                f: file,
+                file,
                 pool,
+                content_type,
             }),
-            phantom: ::std::marker::PhantomData,
         })
     }
-}
-
-fn compress<E: Entity>(body: E::Body, level: ::flate2::Compression) -> E::Body {
-    let stream: Box<Stream<Item = E::Chunk, Error = hyper::Error> + Send> = {
-        Box::new(body.map(move |chunk: E::Chunk| {
-            let mut encoder = GzEncoder::new(Vec::new(), level);
-            encoder.write(chunk.as_ref())
-                .and_then(|_| encoder.finish())
-                // TODO: Handle these potential failures
-                .unwrap()
-                .into()
-        }))
-    };
-    stream.into()
-}
-
-impl<B, C> Entity for ChunkedFile<B, C>
-where
-    B: 'static
-        + Send
-        + Stream<Item = C, Error = hyper::Error>
-        + From<Box<Stream<Item = C, Error = hyper::Error> + Send>>,
-    C: 'static + Send + AsRef<[u8]> + From<Vec<u8>> + From<&'static [u8]>,
-{
-    type Chunk = C;
-    type Body = B;
 
     fn len(&self) -> u64 {
         self.inner.len
-    }
-
-    fn last_modified(&self) -> Option<header::HttpDate> {
-        Some(self.inner.mtime.into())
     }
 
     fn content_type(&self) -> &hypermime::Mime {
         &self.inner.content_type
     }
 
+    fn last_modified(&self) -> header::HttpDate {
+        header::HttpDate::from(self.inner.mtime)
+    }
+
     fn etag(&self) -> header::EntityTag {
         let dur = self.inner
             .mtime
             .duration_since(time::UNIX_EPOCH)
-            .unwrap_or(Duration::new(0, 0));
+            .unwrap_or(time::Duration::new(0, 0));
         header::EntityTag::strong(format!(
             "{}${}",
             base36::encode(self.len()),
@@ -169,28 +117,29 @@ where
         ))
     }
 
-    fn get_range(&self, range: Range<u64>) -> B {
-        let stream =
-            ::futures::stream::unfold((range, self.inner.clone()), move |(left, inner)| {
-                if left.start == left.end {
-                    return None;
-                }
-                let chunk_size = ::std::cmp::min(CHUNK_SIZE, left.end - left.start) as usize;
-                let mut chunk = Vec::with_capacity(chunk_size);
-                unsafe { chunk.set_len(chunk_size) };
-                let bytes_read = match inner.f.read_at(&mut chunk, left.start) {
-                    Err(e) => return Some(Err(e.into())),
-                    Ok(b) => b,
-                };
-                chunk.truncate(bytes_read);
+}
 
-                Some(Ok((
-                    chunk.into(),
-                    (left.start + bytes_read as u64..left.end, inner),
-                )))
-            });
+impl ChunkStreamable for Resource {
+    fn get_range(&self, range: Range<u64>) -> ChunkStream {
+        let stream = futures::stream::unfold((range, self.inner.clone()), move |(left, inner)| {
+            if left.start == left.end {
+                return None;
+            }
+            let chunk_size = std::cmp::min(CHUNK_SIZE, left.end - left.start) as usize;
+            let mut chunk = Vec::with_capacity(chunk_size);
+            unsafe { chunk.set_len(chunk_size) };
+            let bytes_read = match inner.file.read_at(&mut chunk, left.start) {
+                Err(e) => return Some(Err(hyper::Error::from(e))),
+                Ok(n) => n,
+            };
+            chunk.truncate(bytes_read);
+            Some(Ok((
+                Chunk::from(chunk),
+                (left.start + bytes_read as u64..left.end, inner),
+            )))
+        });
 
-        let stream: Box<Stream<Item = C, Error = hyper::Error> + Send> = {
+        let stream: ChunkStream = {
             let (tx, rx) = ::futures::sync::mpsc::channel(0);
             self.inner
                 .pool
@@ -201,8 +150,20 @@ where
                     .and_then(|r| ::futures::future::result(r)),
             )
         };
-        stream.into()
+
+        stream
     }
+}
+
+fn compress(body: ChunkStream, level: ::flate2::Compression) -> ChunkStream {
+    Box::new(body.map(move |chunk| {
+        let mut encoder = GzEncoder::new(Vec::new(), level);
+        encoder.write(chunk.as_ref())
+            .and_then(|_| encoder.finish())
+            // TODO: Handle these potential failures
+            .unwrap()
+            .into()
+    }))
 }
 
 lazy_static! {
@@ -215,35 +176,47 @@ lazy_static! {
     };
 }
 
-fn handler<E: Entity>(
-    path: PathBuf,
-    entity: E,
-    req: &Request,
-    opts: &'static options::Options,
-) -> Response<E::Body> {
+fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
+    let resource_path = match get_resource_path(&ctx.root, req.uri().path()) {
+        None => return not_found(),
+        Some(path) => path,
+    };
+
+    let file = match File::open(&resource_path) {
+        Err(_) => return not_found(),
+        Ok(file) => file,
+    };
+
+    let resource = match Resource::new(
+        file,
+        ctx.pool.clone(),
+        mime::guess_mime_by_path(resource_path.as_path()),
+    ) {
+        Err(_) => return not_found(),
+        Ok(resource) => resource,
+    };
+
     if !ALLOWED_METHODS.contains(req.method()) {
-        return method_not_allowed::<E>();
+        return method_not_allowed();
     }
 
     // HANDLE CACHING HEADERS
 
-    let resource_etag = entity.etag();
+    let resource_etag = resource.etag();
 
     {
         let is_not_modified =
             if !negotiation::none_match(req.headers().get::<header::IfNoneMatch>(), &resource_etag)
             {
                 true
-            } else if let (Some(m), Some(&header::IfModifiedSince(since))) =
-                (entity.last_modified(), req.headers().get())
-            {
-                m <= since
+            } else if let Some(&header::IfModifiedSince(since)) = req.headers().get() {
+                resource.last_modified() <= since
             } else {
                 false
             };
 
         if is_not_modified {
-            return not_modified::<E>(resource_etag);
+            return not_modified(resource_etag);
         }
     }
 
@@ -251,30 +224,29 @@ fn handler<E: Entity>(
         let is_precondition_failed =
             if !negotiation::any_match(req.headers().get::<header::IfMatch>(), &resource_etag) {
                 true
-            } else if let (Some(m), Some(&header::IfUnmodifiedSince(since))) =
-                (entity.last_modified(), req.headers().get())
-            {
-                m > since
+            } else if let Some(&header::IfUnmodifiedSince(since)) = req.headers().get() {
+                resource.last_modified() > since
             } else {
                 false
             };
 
         if is_precondition_failed {
-            return precondition_failed::<E>();
+            return precondition_failed();
         }
     }
 
     // PARSE RANGE HEADER
-    // - Comes after evaluating precondition headers. <https://tools.ietf.org/html/rfc7233#section-3.1>
+    // - Comes after evaluating precondition headers.
+    //   <https://tools.ietf.org/html/rfc7233#section-3.1>
 
     let range = range::parse_range_header(
         req.headers().has::<header::Range>(),
         req.headers().get::<header::Range>(),
-        entity.len(),
+        resource.len(),
     );
 
     if let RequestedRange::NotSatisfiable = range {
-        return invalid_range::<E>(entity.len());
+        return invalid_range(resource.len());
     };
 
     let mut res = Response::new();
@@ -283,12 +255,12 @@ fn handler<E: Entity>(
     res.headers_mut()
         .set(header::AcceptRanges(vec![header::RangeUnit::Bytes]));
     res.headers_mut()
-        .set(header::LastModified(entity.last_modified().unwrap()));
+        .set(header::LastModified(resource.last_modified()));
     res.headers_mut()
-        .set(header::ContentType(entity.content_type().to_owned()));
+        .set(header::ContentType(resource.content_type().to_owned()));
 
     // Only set max-age if it's configured at all.
-    if let Some(max_age) = opts.cache.as_ref().map(|opts| opts.max_age) {
+    if let Some(max_age) = ctx.opts.cache.as_ref().map(|opts| opts.max_age) {
         res.headers_mut().set(header::CacheControl(vec![
             header::CacheDirective::Public,
             header::CacheDirective::MaxAge(max_age),
@@ -302,7 +274,7 @@ fn handler<E: Entity>(
                 res.headers_mut()
                     .set(header::ContentRange(header::ContentRangeSpec::Bytes {
                         range: Some((range.start, range.end)),
-                        instance_length: Some(entity.len()),
+                        instance_length: Some(resource.len()),
                     }));
 
                 // NOTE: Range header is end-inclusive but std::ops::Range is end-exclusive.
@@ -310,14 +282,14 @@ fn handler<E: Entity>(
 
                 range
             }
-            _ => 0..entity.len(),
+            _ => 0..resource.len(),
         };
 
-        entity.get_range(range)
+        resource.get_range(range)
     };
 
-    let compression = opts.gzip.as_ref().and_then(|opts| {
-        if entity.len() >= opts.threshold && mime::is_compressible_path(&path) {
+    let compression = ctx.opts.gzip.as_ref().and_then(|opts| {
+        if resource.len() >= opts.threshold && mime::is_compressible_path(&resource_path) {
             negotiation::negotiate_encoding(req.headers().get::<header::AcceptEncoding>())
         } else {
             None
@@ -326,7 +298,7 @@ fn handler<E: Entity>(
 
     if compression.is_some() {
         res.headers_mut()
-            .set(header::ContentEncoding(vec![Encoding::Gzip]));
+            .set(header::ContentEncoding(vec![header::Encoding::Gzip]));
     }
 
     // For HEAD requests, we do all the work except sending the body.
@@ -335,7 +307,7 @@ fn handler<E: Entity>(
     }
 
     if compression.is_some() {
-        res.with_body(compress::<E>(body, opts.gzip.as_ref().unwrap().level))
+        res.with_body(compress(body, ctx.opts.gzip.as_ref().unwrap().level))
     } else {
         res.with_body(body)
     }
@@ -343,25 +315,13 @@ fn handler<E: Entity>(
 
 impl hyper::server::Service for HttpService {
     type Request = Request;
-    type Response = Response<Box<Stream<Item = Vec<u8>, Error = Self::Error> + Send>>;
+    type Response = Response<ChunkStream>;
     type Error = hyper::Error;
     type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, req: Request) -> Self::Future {
         let ctx = self.0;
-
-        let work = move || match get_resource_path(&ctx.root, req.uri().path()) {
-            None => Ok(Response::new().with_status(StatusCode::NotFound)),
-            Some(path) => Ok(std::fs::File::open(path.clone())
-                .and_then(|file| {
-                    let pool = ctx.pool.clone();
-                    let mime = mime::guess_mime_by_path(path.as_path());
-                    ChunkedFile::new(file, pool, mime)
-                })
-                .map(|entity| handler(path, entity, &req, &ctx.opts))
-                .unwrap_or_else(|_| Response::new().with_status(StatusCode::NotFound))),
-        };
-
+        let work = move || Ok(handler(&ctx, &req));
         Box::new(ctx.pool.spawn_fn(work))
     }
 }
@@ -381,7 +341,7 @@ pub fn get_resource_path(root: &Path, req_path: &str) -> Option<PathBuf> {
     // Security: request path cannot climb directories
     if !Path::new(req_path).components().all(|c| {
         match c {
-            Component::Normal(_) | Component::RootDir =>
+            path::Component::Normal(_) | path::Component::RootDir =>
                 true,
             _ => // e.g. neither ParentDir nor CurDir allowed.
                 false,
@@ -398,13 +358,22 @@ pub fn get_resource_path(root: &Path, req_path: &str) -> Option<PathBuf> {
 
 // CANNED RESPONSES
 
-fn precondition_failed<E: Entity>() -> Response<E::Body> {
+fn not_found() -> Response<ChunkStream> {
+    let text = b"Not Found";
+    let body: ChunkStream = Box::new(stream::once(Ok(text[..].into())));
+    Response::new()
+        .with_status(StatusCode::NotFound)
+        .with_header(header::ContentLength(text.len() as u64))
+        .with_body(body)
+}
+
+fn precondition_failed() -> Response<ChunkStream> {
     Response::new()
         .with_status(StatusCode::PreconditionFailed)
         .with_header(header::ContentLength(0))
 }
 
-fn not_modified<E: Entity>(etag: header::EntityTag) -> Response<E::Body> {
+fn not_modified(etag: header::EntityTag) -> Response<ChunkStream> {
     Response::new()
         .with_status(StatusCode::NotModified)
         .with_header(header::ETag(etag)) // Required in 304 response
@@ -412,10 +381,9 @@ fn not_modified<E: Entity>(etag: header::EntityTag) -> Response<E::Body> {
 }
 
 // TODO: Is OPTIONS part of MethodNotAllowed?
-fn method_not_allowed<E: Entity>() -> Response<E::Body> {
+fn method_not_allowed() -> Response<ChunkStream> {
     let text = b"This resource only supports GET, HEAD, and OPTIONS.";
-    let body: Box<Stream<Item = E::Chunk, Error = hyper::Error> + Send> =
-        Box::new(stream::once(Ok(text[..].into())));
+    let body: ChunkStream = Box::new(stream::once(Ok(text[..].into())));
     Response::new()
         .with_status(StatusCode::MethodNotAllowed)
         .with_header(header::ContentLength(text.len() as u64))
@@ -428,10 +396,9 @@ fn method_not_allowed<E: Entity>() -> Response<E::Body> {
         .with_body(body)
 }
 
-fn invalid_range<E: Entity>(resource_len: u64) -> Response<E::Body> {
+fn invalid_range(resource_len: u64) -> Response<ChunkStream> {
     let text = b"Invalid range";
-    let body: Box<Stream<Item = E::Chunk, Error = hyper::Error> + Send> =
-        Box::new(stream::once(Ok(text[..].into())));
+    let body: ChunkStream = Box::new(stream::once(Ok(text[..].into())));
     Response::new()
         .with_status(StatusCode::RangeNotSatisfiable)
         .with_header(header::ContentRange(header::ContentRangeSpec::Bytes {
