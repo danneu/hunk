@@ -4,14 +4,14 @@ use toml;
 
 pub static DEFAULT_PORT: u16 = 1337;
 
-#[derive(Deserialize, Serialize, Debug, Default)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
 pub struct Config {
     #[serde(default)] pub server: Server,
     pub cache: Option<Cache>,
     pub gzip: Option<Gzip>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Server {
     pub host: Option<Ipv4Addr>,
     pub port: Option<u16>,
@@ -28,10 +28,10 @@ impl Default for Server {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Gzip {}
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Cache {
     pub max_age: u32,
 }

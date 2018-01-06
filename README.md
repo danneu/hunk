@@ -29,6 +29,8 @@ Serve the "./public" directory:
     ./hunk public -p 3000
     ./hunk public -h 0.0.0.0 -p 80
     
+However, you'll need to use a config file to opt into most of Hunk's features.
+    
 ## Config file
 
 Hunk looks for an optional Hunk.toml file in the current directory.

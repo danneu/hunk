@@ -143,7 +143,7 @@ fn main() {
     let ctx = leak(Box::new(hunk::Context {
         root: root.clone(),
         pool: CpuPool::new(1),
-        config,
+        config: config.clone(),
     }));
 
     let addr = SocketAddr::new(IpAddr::V4(host), port);
@@ -158,12 +158,9 @@ fn main() {
             "[hunk]".bright_white().bold(),
             "listening".bright_green().bold()
         );
+        println!("folder:  {}", root.to_str().unwrap().bright_white().bold());
         println!(
-            "  -> folder:  {}",
-            root.to_str().unwrap().bright_white().bold()
-        );
-        println!(
-            "  -> address: {}{}",
+            "address: {}{}",
             "http://".bright_white(),
             server
                 .local_addr()
@@ -172,6 +169,26 @@ fn main() {
                 .bright_white()
                 .bold()
         );
+        println!(
+            "- gzip: {}",
+            match config.gzip.as_ref() {
+                None => "off".red(),
+                Some(_) => "on".green(),
+            }.bold()
+                .to_string()
+        );
+        println!(
+            "- cache: {}",
+            match config.cache {
+                None => "off".red().bold().to_string(),
+                Some(ref opts) => {
+                    let mut s = String::from(format!("{}", "on".green().bold()));
+                    s.push(' ');
+                    s.push_str(format!("max_age={}", opts.max_age.to_string().bold()).as_ref());
+                    s
+                }
+            }
+        )
     } else {
         println!(
             "[hunk] serving \"{}\" at http://{}",
