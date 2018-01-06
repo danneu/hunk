@@ -154,14 +154,15 @@ impl ChunkStreamable for Resource {
     }
 }
 
+
+// Gzip each chunk with the given compression level.
 fn compress(body: ChunkStream, level: ::flate2::Compression) -> ChunkStream {
-    Box::new(body.map(move |chunk| {
+    Box::new(body.and_then(move |chunk| {
         let mut encoder = GzEncoder::new(Vec::new(), level);
         encoder.write(chunk.as_ref())
             .and_then(|_| encoder.finish())
-            // TODO: Handle these potential failures
-            .unwrap()
-            .into()
+            .map(|vec| vec.into())
+            .map_err(|e| e.into())
     }))
 }
 
