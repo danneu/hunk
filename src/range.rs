@@ -34,10 +34,10 @@ pub fn parse_range_header(
 
             let max_end = file_len - 1;
 
-            let range = match byte_ranges.first().unwrap() {
-                &ByteRangeSpec::FromTo(start, end) => start..(cmp::min(max_end, end)),
-                &ByteRangeSpec::AllFrom(start) => start..max_end,
-                &ByteRangeSpec::Last(suffix_len) => {
+            let range = match *byte_ranges.first().unwrap() {
+                ByteRangeSpec::FromTo(start, end) => start..(cmp::min(max_end, end)),
+                ByteRangeSpec::AllFrom(start) => start..max_end,
+                ByteRangeSpec::Last(suffix_len) => {
                     if suffix_len == 0 {
                         return RequestedRange::NotSatisfiable;
                     }

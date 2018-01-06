@@ -92,8 +92,8 @@ fn main() {
             .server
             .root
             .clone()
-            .or_else(|| matches.value_of("FOLDER").map(|s| String::from(s)))
-            .unwrap_or(String::from(".".to_string())),
+            .or_else(|| matches.value_of("FOLDER").map(String::from))
+            .unwrap_or_else(|| ".".to_string()),
     );
 
     let port = config
@@ -130,7 +130,7 @@ fn main() {
                         .ok()
                 })
         })
-        .unwrap_or(Ipv4Addr::localhost());
+        .unwrap_or_else(Ipv4Addr::localhost);
 
     let root = root.canonicalize().unwrap_or_else(|_| {
         eprintln!("Root path not found");
@@ -180,8 +180,8 @@ fn main() {
             "- gzip: {}",
             match config.gzip.as_ref() {
                 None => "off".red().bold().to_string(),
-                Some(ref opts) => {
-                    let mut s = String::from(format!("{}", "on".green().bold()));
+                Some(opts) => {
+                    let mut s = format!("{}", "on".green().bold());
                     s.push(' ');
                     s.push_str(format!("level={}/9", opts.level.to_string().bold()).as_ref());
                     s.push(' ');
@@ -195,7 +195,7 @@ fn main() {
             match config.cache {
                 None => "off".red().bold().to_string(),
                 Some(ref opts) => {
-                    let mut s = String::from(format!("{}", "on".green().bold()));
+                    let mut s = format!("{}", "on".green().bold());
                     s.push(' ');
                     s.push_str(format!("max_age={}", opts.max_age.to_string().bold()).as_ref());
                     s

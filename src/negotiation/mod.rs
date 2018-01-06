@@ -14,8 +14,7 @@ pub fn none_match(header_value: Option<&header::IfNoneMatch>, etag: &header::Ent
 // if it returns false, then we send a precondition-failed response.
 pub fn any_match(header_value: Option<&header::IfMatch>, etag: &header::EntityTag) -> bool {
     match header_value {
-        None => true,
-        Some(&header::IfMatch::Any) => true,
+        None | Some(&header::IfMatch::Any) => true,
         Some(&header::IfMatch::Items(ref candidates)) => (candidates as &[header::EntityTag])
             .iter()
             .any(|candidate| candidate.strong_eq(etag)),
@@ -36,7 +35,7 @@ pub fn negotiate_encoding(
             // Sort by client preference descending
             qitems.sort_unstable_by_key(|qi| ::std::cmp::Reverse(qi.quality));
 
-            for qi in qitems.into_iter() {
+            for qi in qitems {
                 match qi.item {
                     header::Encoding::Gzip =>
                         return Some(header::Encoding::Gzip),

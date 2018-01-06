@@ -108,7 +108,7 @@ impl Resource {
         let dur = self.inner
             .mtime
             .duration_since(time::UNIX_EPOCH)
-            .unwrap_or(time::Duration::new(0, 0));
+            .unwrap_or_else(|_| time::Duration::new(0, 0));
         header::EntityTag::strong(format!(
             "{}${}",
             base36::encode(self.len()),
@@ -119,33 +119,31 @@ impl Resource {
 
 impl ChunkStreamable for Resource {
     fn get_range(&self, range: Range<u64>) -> ChunkStream {
-        let stream = futures::stream::unfold((range, self.inner.clone()), move |(left, inner)| {
-            if left.start == left.end {
-                return None;
-            }
-            let chunk_size = std::cmp::min(CHUNK_SIZE, left.end - left.start) as usize;
-            let mut chunk = Vec::with_capacity(chunk_size);
-            unsafe { chunk.set_len(chunk_size) };
-            let bytes_read = match inner.file.read_at(&mut chunk, left.start) {
-                Err(e) => return Some(Err(hyper::Error::from(e))),
-                Ok(n) => n,
-            };
-            chunk.truncate(bytes_read);
-            Some(Ok((
-                Chunk::from(chunk),
-                (left.start + bytes_read as u64..left.end, inner),
-            )))
-        });
+        let stream =
+            futures::stream::unfold((range, Arc::clone(&self.inner)), move |(left, inner)| {
+                if left.start == left.end {
+                    return None;
+                }
+                let chunk_size = std::cmp::min(CHUNK_SIZE, left.end - left.start) as usize;
+                let mut chunk = Vec::with_capacity(chunk_size);
+                unsafe { chunk.set_len(chunk_size) };
+                let bytes_read = match inner.file.read_at(&mut chunk, left.start) {
+                    Err(e) => return Some(Err(hyper::Error::from(e))),
+                    Ok(n) => n,
+                };
+                chunk.truncate(bytes_read);
+                Some(Ok((
+                    Chunk::from(chunk),
+                    (left.start + bytes_read as u64..left.end, inner),
+                )))
+            });
 
         let stream: ChunkStream = {
             let (tx, rx) = ::futures::sync::mpsc::channel(0);
-            self.inner
-                .pool
-                .spawn(tx.send_all(stream.then(|i| Ok(i))))
-                .forget();
+            self.inner.pool.spawn(tx.send_all(stream.then(Ok))).forget();
             Box::new(
                 rx.map_err(|()| unreachable!())
-                    .and_then(|r| ::futures::future::result(r)),
+                    .and_then(::futures::future::result),
             )
         };
 
@@ -321,7 +319,7 @@ impl hyper::server::Service for HttpService {
 
     fn call(&self, req: Request) -> Self::Future {
         let ctx = self.0;
-        let work = move || Ok(handler(&ctx, &req));
+        let work = move || Ok(handler(ctx, &req));
         Box::new(ctx.pool.spawn_fn(work))
     }
 }
@@ -339,14 +337,10 @@ pub fn get_resource_path(root: &Path, req_path: &str) -> Option<PathBuf> {
     }
 
     // Security: request path cannot climb directories
-    if !Path::new(req_path).components().all(|c| {
-        match c {
-            path::Component::Normal(_) | path::Component::RootDir =>
-                true,
-            _ => // e.g. neither ParentDir nor CurDir allowed.
-                false,
-        }
-    }) {
+    if Path::new(req_path)
+        .components()
+        .any(|c| c == path::Component::ParentDir)
+    {
         return None;
     };
 
