@@ -38,9 +38,8 @@ impl<'a> Encoder<'a> {
         Encoder { alphabet }
     }
 
-    fn encode(&self, n: u64) -> String {
+    fn encode(&self, mut n: u64) -> String {
         let radix = self.alphabet.len();
-        let mut n = n;
         let mut digits: RevVec<char> = RevVec::new();
         while n >= radix as u64 {
             let rem = n % (radix as u64);
