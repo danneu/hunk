@@ -215,14 +215,6 @@ fn handler<E: Entity>(
         return method_not_allowed::<E>();
     }
 
-    // PARSE RANGE HEADER
-
-    let range = range::parse_range_header(req.headers().get::<header::Range>(), entity.len());
-
-    if let RequestedRange::NotSatisfiable = range {
-        return invalid_range::<E>(entity.len());
-    };
-
     // HANDLE CACHING HEADERS
 
     let resource_etag = entity.etag().unwrap();
@@ -261,6 +253,19 @@ fn handler<E: Entity>(
             return precondition_failed::<E>();
         }
     }
+
+    // PARSE RANGE HEADER
+    // - Comes after evaluating precondition headers. <https://tools.ietf.org/html/rfc7233#section-3.1>
+
+    let range = range::parse_range_header(
+        req.headers().has::<header::Range>(),
+        req.headers().get::<header::Range>(),
+        entity.len(),
+    );
+
+    if let RequestedRange::NotSatisfiable = range {
+        return invalid_range::<E>(entity.len());
+    };
 
     let mut res = Response::new();
 
