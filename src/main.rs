@@ -142,21 +142,15 @@ fn main() {
         ::std::process::exit(1);
     }
 
-    // VALIDATION
-    // TODO: Centralize this elsewhere. Could do it as part of parse() but probably
-    //       want to keep validation step separate from parsing.
-
-    if let Some(ref opts) = config.gzip.as_ref() {
-        if opts.level > 9 || opts.level < 1 {
-            eprintln!("gzip.level must be 1-9 (actual = {})", opts.level);
-            ::std::process::exit(1);
-        }
-    }
+    let opts = hunk::options::Options::new(config.clone()).unwrap_or_else(|err| {
+        eprintln!("{}", err);
+        ::std::process::exit(1);
+    });
 
     let ctx = leak(Box::new(hunk::Context {
         root: root.clone(),
         pool: CpuPool::new(1),
-        config: config.clone(),
+        opts: opts.clone(),
     }));
 
     let addr = SocketAddr::new(IpAddr::V4(host), port);

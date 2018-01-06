@@ -35,6 +35,7 @@ use std::ops::Range;
 use std::time::{self, Duration, SystemTime};
 use std::path::{Component, Path, PathBuf};
 use std::os::unix::fs::FileExt;
+use std::collections::HashSet;
 
 // 1st party
 
@@ -43,6 +44,7 @@ mod codec;
 mod negotiation;
 mod mime;
 pub mod config;
+pub mod options;
 
 use range::RequestedRange;
 use codec::base36;
@@ -52,7 +54,7 @@ static CHUNK_SIZE: u64 = 65_536;
 pub struct Context {
     pub root: PathBuf,
     pub pool: CpuPool,
-    pub config: config::Config,
+    pub opts: options::Options,
 }
 
 pub struct HttpService(&'static Context);
@@ -74,11 +76,11 @@ trait Entity: 'static + Send {
     fn len(&self) -> u64;
 
     /// Gets the body bytes indicated by `range`.
-    fn get_range(&self, range: Range<u64>, compression: Option<(Encoding, u32)>) -> Self::Body;
+    fn get_range(&self, range: Range<u64>) -> Self::Body;
 
     fn last_modified(&self) -> Option<header::HttpDate>;
 
-    fn etag(&self) -> Option<header::EntityTag>;
+    fn etag(&self) -> header::EntityTag;
 
     fn content_type(&self) -> &hypermime::Mime;
 }
@@ -118,6 +120,21 @@ impl<B, C> ChunkedFile<B, C> {
     }
 }
 
+fn compress<E: Entity>(body: E::Body, level: ::flate2::Compression) -> E::Body {
+    let stream: Box<Stream<Item = E::Chunk, Error = hyper::Error> + Send> = {
+        Box::new(body.map(move |chunk: E::Chunk| {
+            let mut encoder = GzEncoder::new(Vec::new(), level);
+            //                encoder.write(&chunk)
+            encoder.write(chunk.as_ref())
+                .and_then(|_| encoder.finish())
+                // TODO: Handle these potential failures
+                .unwrap()
+                .into()
+        }))
+    };
+    stream.into()
+}
+
 impl<B, C> Entity for ChunkedFile<B, C>
 where
     B: 'static
@@ -141,19 +158,19 @@ where
         &self.inner.content_type
     }
 
-    fn etag(&self) -> Option<header::EntityTag> {
+    fn etag(&self) -> header::EntityTag {
         let dur = self.inner
             .mtime
             .duration_since(time::UNIX_EPOCH)
             .unwrap_or(Duration::new(0, 0));
-        Some(header::EntityTag::strong(format!(
+        header::EntityTag::strong(format!(
             "{}${}",
             base36::encode(self.len()),
             base36::encode(dur.as_secs()), // TODO: would rather use millis
-        )))
+        ))
     }
 
-    fn get_range(&self, range: Range<u64>, compression: Option<(Encoding, u32)>) -> B {
+    fn get_range(&self, range: Range<u64>) -> B {
         let stream =
             ::futures::stream::unfold((range, self.inner.clone()), move |(left, inner)| {
                 if left.start == left.end {
@@ -168,20 +185,6 @@ where
                 };
                 chunk.truncate(bytes_read);
 
-                // COMPRESS
-                // - NOTE: This of course changes the response size.
-                //   Would need to recalc length if I wanted to keep track of content-length.
-                //   Haven't looked into it much.
-                let chunk = if let Some((Encoding::Gzip, level)) = compression {
-                    let mut encoder = GzEncoder::new(Vec::new(), Compression::new(level));
-                    encoder.write(&chunk)
-                    .and_then(|_| encoder.finish())
-                    // TODO: Handle these potential failures
-                    .unwrap()
-                } else {
-                    chunk
-                };
-
                 Some(Ok((
                     chunk.into(),
                     (left.start + bytes_read as u64..left.end, inner),
@@ -189,13 +192,13 @@ where
             });
 
         let stream: Box<Stream<Item = C, Error = hyper::Error> + Send> = {
-            let (snd, rcv) = ::futures::sync::mpsc::channel(0);
+            let (tx, rx) = ::futures::sync::mpsc::channel(0);
             self.inner
                 .pool
-                .spawn(snd.send_all(stream.then(|i| Ok(i))))
+                .spawn(tx.send_all(stream.then(|i| Ok(i))))
                 .forget();
             Box::new(
-                rcv.map_err(|()| unreachable!())
+                rx.map_err(|()| unreachable!())
                     .and_then(|r| ::futures::future::result(r)),
             )
         };
@@ -203,21 +206,29 @@ where
     }
 }
 
+lazy_static! {
+    static ref ALLOWED_METHODS: HashSet<Method> = {
+        let mut set = HashSet::new();
+        set.insert(Method::Get);
+        set.insert(Method::Head);
+        set.insert(Method::Options);
+        set
+    };
+}
+
 fn handler<E: Entity>(
     path: PathBuf,
     entity: E,
     req: &Request,
-    config: &config::Config,
+    opts: &'static options::Options,
 ) -> Response<E::Body> {
-    if *req.method() != Method::Get && *req.method() != Method::Head
-        && *req.method() != Method::Options
-    {
+    if !ALLOWED_METHODS.contains(req.method()) {
         return method_not_allowed::<E>();
     }
 
     // HANDLE CACHING HEADERS
 
-    let resource_etag = entity.etag().unwrap();
+    let resource_etag = entity.etag();
 
     {
         let is_not_modified =
@@ -275,28 +286,14 @@ fn handler<E: Entity>(
     res.headers_mut()
         .set(header::LastModified(entity.last_modified().unwrap()));
     res.headers_mut()
-        .set(header::ContentType(entity.content_type().clone()));
+        .set(header::ContentType(entity.content_type().to_owned()));
 
     // Only set max-age if it's configured at all.
-    if let Some(max_age) = config.cache.as_ref().map(|opts| opts.max_age) {
+    if let Some(max_age) = opts.cache.as_ref().map(|opts| opts.max_age) {
         res.headers_mut().set(header::CacheControl(vec![
             header::CacheDirective::Public,
             header::CacheDirective::MaxAge(max_age),
         ]));
-    }
-
-    let compression: Option<(Encoding, u32)> = config.gzip.as_ref().and_then(|opts| {
-        if entity.len() >= opts.threshold && mime::is_compressible_path(&path) {
-            negotiation::negotiate_encoding(req.headers().get::<header::AcceptEncoding>())
-                .map(|enc| (enc, opts.level))
-        } else {
-            None
-        }
-    });
-
-    if compression.is_some() {
-        res.headers_mut()
-            .set(header::ContentEncoding(vec![Encoding::Gzip]));
     }
 
     let body = {
@@ -317,23 +314,37 @@ fn handler<E: Entity>(
             _ => 0..entity.len(),
         };
 
-        entity.get_range(range, compression)
+        entity.get_range(range)
     };
+
+    let compression = opts.gzip.as_ref().and_then(|opts| {
+        if entity.len() >= opts.threshold && mime::is_compressible_path(&path) {
+            negotiation::negotiate_encoding(req.headers().get::<header::AcceptEncoding>())
+        } else {
+            None
+        }
+    });
+
+    if compression.is_some() {
+        res.headers_mut()
+            .set(header::ContentEncoding(vec![Encoding::Gzip]));
+    }
 
     // For HEAD requests, we do all the work except sending the body.
     if *req.method() == Method::Head {
         return res;
     }
 
-    // TODO: It would be cleaner to do gzip here, but I couldn't figure out how to
-    // satisfy the type-checker.
-
-    res.with_body(body)
+    if compression.is_some() {
+        res.with_body(compress::<E>(body, opts.gzip.as_ref().unwrap().level))
+    } else {
+        res.with_body(body)
+    }
 }
 
 impl hyper::server::Service for HttpService {
     type Request = Request;
-    type Response = Response<Box<Stream<Item = Vec<u8>, Error = hyper::Error> + Send>>;
+    type Response = Response<Box<Stream<Item = Vec<u8>, Error = Self::Error> + Send>>;
     type Error = hyper::Error;
     type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
@@ -348,7 +359,7 @@ impl hyper::server::Service for HttpService {
                     let mime = mime::guess_mime_by_path(path.as_path());
                     ChunkedFile::new(file, pool, mime)
                 })
-                .map(|entity| handler(path, entity, &req, &ctx.config))
+                .map(|entity| handler(path, entity, &req, &ctx.opts))
                 .unwrap_or_else(|_| Response::new().with_status(StatusCode::NotFound))),
         };
 

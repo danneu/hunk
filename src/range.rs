@@ -67,7 +67,7 @@ pub fn parse_range_header(
             RequestedRange::Satisfiable(range)
         }
         // We only support byte ranges.
-        Some(x) => RequestedRange::NotSatisfiable,
+        Some(_) => RequestedRange::NotSatisfiable,
         None => {
             // req.headers().get(header::Range) will be None if start > end, so we need to
             // check req.headers().has(header::Range) as well to differentiate between
