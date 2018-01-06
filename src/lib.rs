@@ -13,7 +13,7 @@ extern crate toml;
 
 // 3rd party
 
-use futures::{Sink, Future, Stream, stream};
+use futures::{stream, Future, Sink, Stream};
 use futures_cpupool::CpuPool;
 
 use hyper::{Chunk, Method, StatusCode};
@@ -115,7 +115,6 @@ impl Resource {
             base36::encode(dur.as_secs()), // TODO: would rather use millis
         ))
     }
-
 }
 
 impl ChunkStreamable for Resource {
@@ -154,12 +153,12 @@ impl ChunkStreamable for Resource {
     }
 }
 
-
 // Gzip each chunk with the given compression level.
 fn compress(body: ChunkStream, level: ::flate2::Compression) -> ChunkStream {
     Box::new(body.and_then(move |chunk| {
         let mut encoder = GzEncoder::new(Vec::new(), level);
-        encoder.write(chunk.as_ref())
+        encoder
+            .write(chunk.as_ref())
             .and_then(|_| encoder.finish())
             .map(|vec| vec.into())
             .map_err(|e| e.into())
@@ -177,17 +176,20 @@ lazy_static! {
 }
 
 fn is_not_modified(resource: &Resource, req: &Request, resource_etag: &header::EntityTag) -> bool {
-    if !negotiation::none_match(req.headers().get::<header::IfNoneMatch>(), resource_etag)
-        {
-            true
-        } else if let Some(&header::IfModifiedSince(since)) = req.headers().get() {
+    if !negotiation::none_match(req.headers().get::<header::IfNoneMatch>(), resource_etag) {
+        true
+    } else if let Some(&header::IfModifiedSince(since)) = req.headers().get() {
         resource.last_modified() <= since
     } else {
         false
     }
 }
 
-fn is_precondition_failed(resource: &Resource, req: &Request, resource_etag: &header::EntityTag) -> bool {
+fn is_precondition_failed(
+    resource: &Resource,
+    req: &Request,
+    resource_etag: &header::EntityTag,
+) -> bool {
     if !negotiation::any_match(req.headers().get::<header::IfMatch>(), resource_etag) {
         true
     } else if let Some(&header::IfUnmodifiedSince(since)) = req.headers().get() {
@@ -196,7 +198,6 @@ fn is_precondition_failed(resource: &Resource, req: &Request, resource_etag: &he
         false
     }
 }
-
 
 fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
     let resource_path = match get_resource_path(&ctx.root, req.uri().path()) {
