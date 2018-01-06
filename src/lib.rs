@@ -74,7 +74,7 @@ trait Entity: 'static + Send {
     fn len(&self) -> u64;
 
     /// Gets the body bytes indicated by `range`.
-    fn get_range(&self, range: Range<u64>, compression: Option<Encoding>) -> Self::Body;
+    fn get_range(&self, range: Range<u64>, compression: Option<(Encoding, u32)>) -> Self::Body;
 
     fn last_modified(&self) -> Option<header::HttpDate>;
 
@@ -153,7 +153,7 @@ where
         )))
     }
 
-    fn get_range(&self, range: Range<u64>, compression: Option<Encoding>) -> B {
+    fn get_range(&self, range: Range<u64>, compression: Option<(Encoding, u32)>) -> B {
         let stream =
             ::futures::stream::unfold((range, self.inner.clone()), move |(left, inner)| {
                 if left.start == left.end {
@@ -172,8 +172,8 @@ where
                 // - NOTE: This of course changes the response size.
                 //   Would need to recalc length if I wanted to keep track of content-length.
                 //   Haven't looked into it much.
-                let chunk = if compression == Some(Encoding::Gzip) {
-                    let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+                let chunk = if let Some((Encoding::Gzip, level)) = compression {
+                    let mut encoder = GzEncoder::new(Vec::new(), Compression::new(level));
                     encoder.write(&chunk)
                     .and_then(|_| encoder.finish())
                     // TODO: Handle these potential failures
@@ -280,12 +280,14 @@ fn handler<E: Entity>(
         ]));
     }
 
-    let compression: Option<Encoding> =
-        if config.gzip.is_some() && entity.len() > 1400 && mime::is_compressible_path(&path) {
+    let compression: Option<(Encoding, u32)> = config.gzip.as_ref().and_then(|opts| {
+        if entity.len() > 1400 && mime::is_compressible_path(&path) {
             negotiation::negotiate_encoding(req.headers().get::<header::AcceptEncoding>())
+                .map(|enc| (enc, opts.level))
         } else {
             None
-        };
+        }
+    });
 
     if compression.is_some() {
         res.headers_mut()

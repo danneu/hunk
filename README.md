@@ -52,3 +52,17 @@ tells the client to cache all files for 4 hours.
     
 If the `[gzip]` and `[cache]` keys did not exist, those features
 would simply be turned off.
+
+### gzip
+
+Guesses file types by their file extension and compresses them if they are considered compressible.
+
+For example, .html is compressible but media files like .jpg and .mp4 are not.
+
+- `level` (optional int): Set the compression level between 1 (fastest) and 9 (best). Default = 6.
+
+### cache
+
+Sets cache-control header for all successful resource responses.
+
+- `max_age` (required int): Duration of **seconds** the client should cache the file for.

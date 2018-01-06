@@ -140,6 +140,17 @@ fn main() {
         ::std::process::exit(1);
     }
 
+    // VALIDATION
+    // TODO: Centralize this elsewhere. Could do it as part of parse() but probably
+    //       want to keep validation step separate from parsing.
+
+    if let Some(ref opts) = config.gzip.as_ref() {
+        if opts.level > 9 || opts.level < 1 {
+            eprintln!("gzip.level must be 1-9 (actual = {})", opts.level);
+            ::std::process::exit(1);
+        }
+    }
+
     let ctx = leak(Box::new(hunk::Context {
         root: root.clone(),
         pool: CpuPool::new(1),
@@ -172,10 +183,14 @@ fn main() {
         println!(
             "- gzip: {}",
             match config.gzip.as_ref() {
-                None => "off".red(),
-                Some(_) => "on".green(),
-            }.bold()
-                .to_string()
+                None => "off".red().bold().to_string(),
+                Some(ref opts) => {
+                    let mut s = String::from(format!("{}", "on".green().bold()));
+                    s.push(' ');
+                    s.push_str(format!("level={}/9", opts.level.to_string().bold()).as_ref());
+                    s
+                }
+            }
         );
         println!(
             "- cache: {}",

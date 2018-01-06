@@ -29,7 +29,17 @@ impl Default for Server {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct Gzip {}
+pub struct Gzip {
+    #[serde(default = "default_gzip_level")]
+    // Must be 1-9
+    // IDEA: "best" | "fast" | u32
+    pub level: u32,
+}
+
+// Same as ::flate2::Compression::default()
+fn default_gzip_level() -> u32 {
+    6
+}
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Cache {
