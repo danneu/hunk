@@ -53,6 +53,17 @@ tells the client to cache all files for 4 hours.
 If the `[gzip]` and `[cache]` keys did not exist, those features
 would simply be turned off.
 
+None of the top-level entries (meaning the things that look like `[server]`, `[gzip]`, etc.) themselves are required,
+but some of them have required fields.
+
+### server
+
+Top-level confi
+
+- `host` (optional string): Ipv4 address to bind to. Default = "127.0.0.1".
+- `port` (optional int): Port to bind to. Default = 1337.
+- `root` (optional string): Directory to serve. Default = current directory.
+
 ### gzip
 
 Guesses file types by their file extension and compresses them if they are considered compressible.
