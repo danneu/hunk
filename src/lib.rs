@@ -413,11 +413,12 @@ fn not_modified<E: Entity>(etag: header::EntityTag) -> Response<E::Body> {
 
 // TODO: Is OPTIONS part of MethodNotAllowed?
 fn method_not_allowed<E: Entity>() -> Response<E::Body> {
-    let body: Box<Stream<Item = E::Chunk, Error = hyper::Error> + Send> = Box::new(stream::once(
-        Ok(b"This resource only supports GET, HEAD, and OPTIONS."[..].into()),
-    ));
+    let text = b"This resource only supports GET, HEAD, and OPTIONS.";
+    let body: Box<Stream<Item = E::Chunk, Error = hyper::Error> + Send> =
+        Box::new(stream::once(Ok(text[..].into())));
     Response::new()
         .with_status(StatusCode::MethodNotAllowed)
+        .with_header(header::ContentLength(text.len() as u64))
         .with_header(header::ContentType::plaintext())
         .with_header(header::Allow(vec![
             Method::Get,
@@ -428,9 +429,9 @@ fn method_not_allowed<E: Entity>() -> Response<E::Body> {
 }
 
 fn invalid_range<E: Entity>(resource_len: u64) -> Response<E::Body> {
-    let message = b"Invalid range";
+    let text = b"Invalid range";
     let body: Box<Stream<Item = E::Chunk, Error = hyper::Error> + Send> =
-        Box::new(stream::once(Ok(message[..].into())));
+        Box::new(stream::once(Ok(text[..].into())));
     Response::new()
         .with_status(StatusCode::RangeNotSatisfiable)
         .with_header(header::ContentRange(header::ContentRangeSpec::Bytes {
@@ -438,6 +439,6 @@ fn invalid_range<E: Entity>(resource_len: u64) -> Response<E::Body> {
             instance_length: Some(resource_len),
         }))
         .with_header(header::ContentType::plaintext())
-        .with_header(header::ContentLength(message.len() as u64))
+        .with_header(header::ContentLength(text.len() as u64))
         .with_body(body)
 }
