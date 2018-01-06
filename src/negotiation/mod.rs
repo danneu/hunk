@@ -5,7 +5,9 @@ pub fn none_match(header_value: Option<&header::IfNoneMatch>, etag: &header::Ent
     match header_value {
         Some(&header::IfNoneMatch::Any) => false,
         Some(&header::IfNoneMatch::Items(ref candidates)) => {
-            candidates.iter().any(|candidate| candidate.weak_eq(etag))
+            !(candidates as &[header::EntityTag]).iter().any(|candidate| {
+                candidate.weak_eq(etag)
+            })
         }
         _ => true,
     }
@@ -17,7 +19,9 @@ pub fn any_match(header_value: Option<&header::IfMatch>, etag: &header::EntityTa
         None => true,
         Some(&header::IfMatch::Any) => true,
         Some(&header::IfMatch::Items(ref candidates)) => {
-            candidates.iter().any(|candidate| candidate.strong_eq(etag))
+            (candidates as &[header::EntityTag]).iter().any(|candidate| {
+                candidate.strong_eq(etag)
+            })
         }
     }
 }

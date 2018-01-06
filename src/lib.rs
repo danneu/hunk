@@ -176,6 +176,28 @@ lazy_static! {
     };
 }
 
+fn is_not_modified(resource: &Resource, req: &Request, resource_etag: &header::EntityTag) -> bool {
+    if !negotiation::none_match(req.headers().get::<header::IfNoneMatch>(), resource_etag)
+        {
+            true
+        } else if let Some(&header::IfModifiedSince(since)) = req.headers().get() {
+        resource.last_modified() <= since
+    } else {
+        false
+    }
+}
+
+fn is_precondition_failed(resource: &Resource, req: &Request, resource_etag: &header::EntityTag) -> bool {
+    if !negotiation::any_match(req.headers().get::<header::IfMatch>(), resource_etag) {
+        true
+    } else if let Some(&header::IfUnmodifiedSince(since)) = req.headers().get() {
+        resource.last_modified() > since
+    } else {
+        false
+    }
+}
+
+
 fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
     let resource_path = match get_resource_path(&ctx.root, req.uri().path()) {
         None => return not_found(),
@@ -204,35 +226,12 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
 
     let resource_etag = resource.etag();
 
-    {
-        let is_not_modified =
-            if !negotiation::none_match(req.headers().get::<header::IfNoneMatch>(), &resource_etag)
-            {
-                true
-            } else if let Some(&header::IfModifiedSince(since)) = req.headers().get() {
-                resource.last_modified() <= since
-            } else {
-                false
-            };
-
-        if is_not_modified {
-            return not_modified(resource_etag);
-        }
+    if is_not_modified(&resource, req, &resource_etag) {
+        return not_modified(resource_etag);
     }
 
-    {
-        let is_precondition_failed =
-            if !negotiation::any_match(req.headers().get::<header::IfMatch>(), &resource_etag) {
-                true
-            } else if let Some(&header::IfUnmodifiedSince(since)) = req.headers().get() {
-                resource.last_modified() > since
-            } else {
-                false
-            };
-
-        if is_precondition_failed {
-            return precondition_failed();
-        }
+    if is_precondition_failed(&resource, req, &resource_etag) {
+        return precondition_failed();
     }
 
     // PARSE RANGE HEADER
