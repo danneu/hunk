@@ -286,7 +286,7 @@ fn handler<E: Entity>(
     }
 
     let compression: Option<(Encoding, u32)> = config.gzip.as_ref().and_then(|opts| {
-        if entity.len() > 1400 && mime::is_compressible_path(&path) {
+        if entity.len() >= opts.threshold && mime::is_compressible_path(&path) {
             negotiation::negotiate_encoding(req.headers().get::<header::AcceptEncoding>())
                 .map(|enc| (enc, opts.level))
         } else {

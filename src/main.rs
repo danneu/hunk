@@ -33,9 +33,11 @@ fn leak<T: ?Sized>(b: Box<T>) -> &'static T {
     }
 }
 
-fn main() {
-    let is_tty: bool = unsafe { libc::isatty(libc::STDOUT_FILENO as i32) != 0 };
+fn is_tty() -> bool {
+    unsafe { libc::isatty(libc::STDOUT_FILENO as i32) != 0 }
+}
 
+fn main() {
     let config_path = PathBuf::from("Hunk.toml");
 
     let config = if config_path.exists() && config_path.is_file() {
@@ -162,7 +164,7 @@ fn main() {
         .bind(&addr, move || Ok(HttpService::new(ctx)))
         .unwrap();
 
-    if is_tty {
+    if is_tty() {
         println!();
         println!(
             "{} {}",
@@ -188,6 +190,8 @@ fn main() {
                     let mut s = String::from(format!("{}", "on".green().bold()));
                     s.push(' ');
                     s.push_str(format!("level={}/9", opts.level.to_string().bold()).as_ref());
+                    s.push(' ');
+                    s.push_str(format!("threshold={}", opts.threshold.to_string().bold()).as_ref());
                     s
                 }
             }

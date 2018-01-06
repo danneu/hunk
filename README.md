@@ -60,6 +60,7 @@ Guesses file types by their file extension and compresses them if they are consi
 For example, .html is compressible but media files like .jpg and .mp4 are not.
 
 - `level` (optional int): Set the compression level between 1 (fastest) and 9 (best). Default = 6.
+- `threshold` (optional int): Only gzip files when they are at least this long. Default = 1400.
 
 ### cache
 
