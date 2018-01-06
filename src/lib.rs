@@ -35,14 +35,13 @@ use std::collections::HashSet;
 // 1st party
 
 mod range;
-mod codec;
 mod negotiation;
 mod mime;
+mod base36;
 pub mod config;
 pub mod options;
 
 use range::RequestedRange;
-use codec::base36;
 
 const CHUNK_SIZE: u64 = 65_536;
 
