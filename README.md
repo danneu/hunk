@@ -58,8 +58,6 @@ but some of them have required fields.
 
 ### server
 
-Top-level confi
-
 - `host` (optional string): Ipv4 address to bind to. Default = "127.0.0.1".
 - `port` (optional int): Port to bind to. Default = 1337.
 - `root` (optional string): Directory to serve. Default = current directory.
