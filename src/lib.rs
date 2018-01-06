@@ -1,9 +1,15 @@
+#![feature(ip_constructors)]
+
 extern crate flate2;
 extern crate futures;
 extern crate futures_cpupool;
 extern crate hyper;
 #[macro_use]
 extern crate lazy_static;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate toml;
 
 // 3rd party
 
@@ -36,6 +42,7 @@ mod range;
 mod codec;
 mod negotiation;
 mod mime;
+pub mod config;
 
 use range::RequestedRange;
 use codec::base36;
@@ -45,6 +52,7 @@ static CHUNK_SIZE: u64 = 65_536;
 pub struct Context {
     pub root: PathBuf,
     pub pool: CpuPool,
+    pub config: config::Config,
 }
 
 pub struct HttpService(&'static Context);
@@ -195,7 +203,12 @@ where
     }
 }
 
-fn handler<E: Entity>(path: PathBuf, entity: E, req: &Request) -> Response<E::Body> {
+fn handler<E: Entity>(
+    path: PathBuf,
+    entity: E,
+    req: &Request,
+    config: &config::Config,
+) -> Response<E::Body> {
     if *req.method() != Method::Get && *req.method() != Method::Head
         && *req.method() != Method::Options
     {
@@ -259,19 +272,20 @@ fn handler<E: Entity>(path: PathBuf, entity: E, req: &Request) -> Response<E::Bo
     res.headers_mut()
         .set(header::ContentType(entity.content_type().clone()));
 
-    // TODO: Make max-age configurable
-    let max_age = time::Duration::from_secs(0);
-    res.headers_mut().set(header::CacheControl(vec![
-        header::CacheDirective::Public,
-        header::CacheDirective::MaxAge(max_age.as_secs() as u32),
-    ]));
+    // Only set max-age if it's configured at all.
+    if let Some(max_age) = config.cache.as_ref().map(|opts| opts.max_age) {
+        res.headers_mut().set(header::CacheControl(vec![
+            header::CacheDirective::Public,
+            header::CacheDirective::MaxAge(max_age),
+        ]));
+    }
 
-    let compression: Option<Encoding> = if entity.len() > 1400 && mime::is_compressible_path(&path)
-    {
-        negotiation::negotiate_encoding(req.headers().get::<header::AcceptEncoding>())
-    } else {
-        None
-    };
+    let compression: Option<Encoding> =
+        if config.gzip.is_some() && entity.len() > 1400 && mime::is_compressible_path(&path) {
+            negotiation::negotiate_encoding(req.headers().get::<header::AcceptEncoding>())
+        } else {
+            None
+        };
 
     if compression.is_some() {
         res.headers_mut()
@@ -327,7 +341,7 @@ impl hyper::server::Service for HttpService {
                     let mime = mime::guess_mime_by_path(path.as_path());
                     ChunkedFile::new(file, pool, mime)
                 })
-                .map(|entity| handler(path, entity, &req))
+                .map(|entity| handler(path, entity, &req, &ctx.config))
                 .unwrap_or_else(|_| Response::new().with_status(StatusCode::NotFound))),
         };
 
@@ -348,11 +362,13 @@ pub fn get_resource_path(root: &Path, req_path: &str) -> Option<PathBuf> {
     }
 
     // Security: request path cannot climb directories
-    if !Path::new(req_path).components().all(|c| match c {
-        Component::Normal(_) | Component::RootDir =>
-            true,
-        _ => // e.g. neither ParentDir nor CurDir allowed.
-            false,
+    if !Path::new(req_path).components().all(|c| {
+        match c {
+            Component::Normal(_) | Component::RootDir =>
+                true,
+            _ => // e.g. neither ParentDir nor CurDir allowed.
+                false,
+        }
     }) {
         return None;
     };

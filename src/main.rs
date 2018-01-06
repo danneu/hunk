@@ -8,6 +8,7 @@ extern crate colored;
 extern crate futures_cpupool;
 extern crate hyper;
 extern crate libc;
+extern crate toml;
 
 use clap::{App, Arg};
 use futures_cpupool::CpuPool;
@@ -17,6 +18,8 @@ use std::net::SocketAddr;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::fs::File;
+use std::io::Read;
 
 use hunk::HttpService;
 
@@ -33,12 +36,37 @@ fn leak<T: ?Sized>(b: Box<T>) -> &'static T {
 fn main() {
     let is_tty: bool = unsafe { libc::isatty(libc::STDOUT_FILENO as i32) != 0 };
 
+    let config_path = PathBuf::from("Hunk.toml");
+
+    let config = if config_path.exists() && config_path.is_file() {
+        File::open(config_path)
+            .map_err(|err| {
+                eprintln!("Could not open config file: {}", err);
+                std::process::exit(1);
+            })
+            .and_then(|mut f| {
+                let mut text = String::new();
+                f.read_to_string(&mut text).map(|_| text)
+            })
+            .and_then(|text| {
+                hunk::config::parse(text.as_ref()).map_err(|err| {
+                    eprintln!("Could not parse config: {}", err);
+                    std::process::exit(1);
+                })
+            })
+            .unwrap_or_else(|err| {
+                eprintln!("Could not parse config: {}", err);
+                std::process::exit(1);
+            })
+    } else {
+        hunk::config::Config::default()
+    };
+
     let matches = App::new("Hunk")
         .about("a static-asset server")
         .arg(
             Arg::with_name("FOLDER")
                 .help("the folder to serve")
-                .required(true)
                 .index(1),
         )
         .arg(
@@ -57,49 +85,65 @@ fn main() {
         )
         .get_matches();
 
-    let root = PathBuf::from(matches.value_of("FOLDER").unwrap());
+    let root = PathBuf::from(
+        config
+            .server
+            .root
+            .clone()
+            .or_else(|| matches.value_of("FOLDER").map(|s| String::from(s)))
+            .unwrap_or(String::from(".".to_string())),
+    );
 
-    let port = matches
-        .value_of("port")
-        .and_then(|s| if s.is_empty() { None } else { Some(s) })
-        .and_then(|s| {
-            s.parse::<u16>()
-                .map_err(|err| {
-                    eprintln!("Could not parse port: {}", err);
-                    ::std::process::exit(1)
+    let port = config
+        .server
+        .port
+        .or_else(|| {
+            matches
+                .value_of("port")
+                .and_then(|s| if s.is_empty() { None } else { Some(s) })
+                .and_then(|s| {
+                    s.parse::<u16>()
+                        .map_err(|err| {
+                            eprintln!("Could not parse port: {}", err);
+                            ::std::process::exit(1)
+                        })
+                        .ok()
                 })
-                .ok()
         })
-        .unwrap_or(1337);
+        .unwrap_or(hunk::config::DEFAULT_PORT);
 
-    let host = matches
-        .value_of("host")
-        .and_then(|s| if s.is_empty() { None } else { Some(s) })
-        .and_then(|s| {
-            Ipv4Addr::from_str(s)
-                .map_err(|err| {
-                    eprintln!("Could not parse host: {}", err);
-                    ::std::process::exit(1)
+    let host = config
+        .server
+        .host
+        .or_else(|| {
+            matches
+                .value_of("host")
+                .and_then(|s| if s.is_empty() { None } else { Some(s) })
+                .and_then(|s| {
+                    Ipv4Addr::from_str(s)
+                        .map_err(|err| {
+                            eprintln!("Could not parse host: {}", err);
+                            ::std::process::exit(1)
+                        })
+                        .ok()
                 })
-                .ok()
         })
         .unwrap_or(Ipv4Addr::localhost());
 
-    if !root.exists() {
+    let root = root.canonicalize().unwrap_or_else(|_| {
         eprintln!("Root path not found");
         ::std::process::exit(1);
-    }
+    });
 
     if !root.is_dir() {
         eprintln!("Root path must be a directory");
         ::std::process::exit(1);
     }
 
-    let root = root.canonicalize().unwrap();
-
     let ctx = leak(Box::new(hunk::Context {
         root: root.clone(),
         pool: CpuPool::new(1),
+        config,
     }));
 
     let addr = SocketAddr::new(IpAddr::V4(host), port);
