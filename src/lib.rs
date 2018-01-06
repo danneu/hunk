@@ -49,7 +49,7 @@ pub mod options;
 use range::RequestedRange;
 use codec::base36;
 
-static CHUNK_SIZE: u64 = 65_536;
+const CHUNK_SIZE: u64 = 65_536;
 
 pub struct Context {
     pub root: PathBuf,
@@ -124,7 +124,6 @@ fn compress<E: Entity>(body: E::Body, level: ::flate2::Compression) -> E::Body {
     let stream: Box<Stream<Item = E::Chunk, Error = hyper::Error> + Send> = {
         Box::new(body.map(move |chunk: E::Chunk| {
             let mut encoder = GzEncoder::new(Vec::new(), level);
-            //                encoder.write(&chunk)
             encoder.write(chunk.as_ref())
                 .and_then(|_| encoder.finish())
                 // TODO: Handle these potential failures
