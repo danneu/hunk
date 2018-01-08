@@ -39,6 +39,7 @@ mod range;
 mod negotiation;
 mod mime;
 mod base36;
+mod util;
 pub mod config;
 pub mod options;
 
@@ -117,7 +118,7 @@ impl Resource {
             "{}${}${}",
             base36::encode(self.inner.inode),
             base36::encode(self.len()),
-            base36::encode(dur.as_secs()), // TODO: would rather use millis
+            base36::encode(util::as_millis(dur))
         );
 
         if strong {
