@@ -30,7 +30,7 @@ use std::io::{self, Write};
 use std::ops::Range;
 use std::time;
 use std::path::{self, Path, PathBuf};
-use std::os::unix::fs::FileExt;
+use std::os::unix::fs::{FileExt, MetadataExt};
 use std::collections::HashSet;
 
 // 1st party
@@ -67,6 +67,7 @@ trait ChunkStreamable {
 }
 
 struct ResourceInner {
+    inode: u64,
     len: u64,
     mtime: time::SystemTime,
     content_type: ::hypermime::Mime,
@@ -84,6 +85,7 @@ impl Resource {
         let m = file.metadata()?;
         Ok(Resource {
             inner: Arc::new(ResourceInner {
+                inode: m.ino(),
                 len: m.len(),
                 mtime: m.modified()?,
                 file,
@@ -112,7 +114,8 @@ impl Resource {
             .unwrap_or_else(|_| time::Duration::new(0, 0));
 
         let tag = format!(
-            "{}${}",
+            "{}${}${}",
+            base36::encode(self.inner.inode),
             base36::encode(self.len()),
             base36::encode(dur.as_secs()), // TODO: would rather use millis
         );
