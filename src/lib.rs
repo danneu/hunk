@@ -4,13 +4,13 @@ extern crate flate2;
 extern crate futures;
 extern crate futures_cpupool;
 extern crate hyper;
-extern crate unicase;
 #[macro_use]
 extern crate lazy_static;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate toml;
+extern crate unicase;
 
 // 3rd party
 
@@ -231,10 +231,15 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
 
     // HANDLE CACHING HEADERS
 
-    let should_gzip: bool = ctx.opts.gzip.as_ref().map(|opts| {
-        resource.len() >= opts.threshold && mime::is_compressible_path(&resource_path) &&
-            negotiation::negotiate_encoding(req.headers().get::<header::AcceptEncoding>()) == Some(header::Encoding::Gzip)
-    }).unwrap_or(false);
+    let should_gzip: bool = ctx.opts
+        .gzip
+        .as_ref()
+        .map(|opts| {
+            resource.len() >= opts.threshold && mime::is_compressible_path(&resource_path)
+                && negotiation::negotiate_encoding(req.headers().get::<header::AcceptEncoding>())
+                    == Some(header::Encoding::Gzip)
+        })
+        .unwrap_or(false);
 
     let resource_etag = resource.etag(!should_gzip);
 
@@ -272,10 +277,9 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
 
     // Accept-Encoding doesn't affect the response unless gzip is turned on
     if ctx.opts.gzip.is_some() {
-        res.headers_mut()
-            .set(header::Vary::Items(vec![
-                unicase::Ascii::new("Accept-Encoding".to_owned())
-            ]));
+        res.headers_mut().set(header::Vary::Items(vec![
+            unicase::Ascii::new("Accept-Encoding".to_owned()),
+        ]));
     }
 
     // Only set max-age if it's configured at all.
