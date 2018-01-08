@@ -105,16 +105,23 @@ impl Resource {
         header::HttpDate::from(self.inner.mtime)
     }
 
-    fn etag(&self) -> header::EntityTag {
+    fn etag(&self, strong: bool) -> header::EntityTag {
         let dur = self.inner
             .mtime
             .duration_since(time::UNIX_EPOCH)
             .unwrap_or_else(|_| time::Duration::new(0, 0));
-        header::EntityTag::strong(format!(
+
+        let tag = format!(
             "{}${}",
             base36::encode(self.len()),
             base36::encode(dur.as_secs()), // TODO: would rather use millis
-        ))
+        );
+
+        if strong {
+            header::EntityTag::strong(tag)
+        } else {
+            header::EntityTag::weak(tag)
+        }
     }
 }
 
@@ -153,7 +160,7 @@ impl ChunkStreamable for Resource {
 }
 
 // Gzip each chunk with the given compression level.
-fn compress(body: ChunkStream, level: ::flate2::Compression) -> ChunkStream {
+fn gzip(body: ChunkStream, level: ::flate2::Compression) -> ChunkStream {
     Box::new(body.and_then(move |chunk| {
         let mut encoder = GzEncoder::new(Vec::new(), level);
         encoder
@@ -224,7 +231,12 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
 
     // HANDLE CACHING HEADERS
 
-    let resource_etag = resource.etag();
+    let should_gzip: bool = ctx.opts.gzip.as_ref().map(|opts| {
+        resource.len() >= opts.threshold && mime::is_compressible_path(&resource_path) &&
+            negotiation::negotiate_encoding(req.headers().get::<header::AcceptEncoding>()) == Some(header::Encoding::Gzip)
+    }).unwrap_or(false);
+
+    let resource_etag = resource.etag(!should_gzip);
 
     if is_not_modified(&resource, req, &resource_etag) {
         return not_modified(resource_etag);
@@ -295,15 +307,7 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
         resource.get_range(range)
     };
 
-    let compression = ctx.opts.gzip.as_ref().and_then(|opts| {
-        if resource.len() >= opts.threshold && mime::is_compressible_path(&resource_path) {
-            negotiation::negotiate_encoding(req.headers().get::<header::AcceptEncoding>())
-        } else {
-            None
-        }
-    });
-
-    if compression.is_some() {
+    if should_gzip {
         res.headers_mut()
             .set(header::ContentEncoding(vec![header::Encoding::Gzip]));
     }
@@ -313,8 +317,8 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
         return res;
     }
 
-    if compression.is_some() {
-        res.with_body(compress(body, ctx.opts.gzip.as_ref().unwrap().level))
+    if should_gzip {
+        res.with_body(gzip(body, ctx.opts.gzip.as_ref().unwrap().level))
     } else {
         res.with_body(body)
     }
