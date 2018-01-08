@@ -4,6 +4,7 @@ extern crate flate2;
 extern crate futures;
 extern crate futures_cpupool;
 extern crate hyper;
+extern crate unicase;
 #[macro_use]
 extern crate lazy_static;
 extern crate serde;
@@ -256,6 +257,14 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
         .set(header::LastModified(resource.last_modified()));
     res.headers_mut()
         .set(header::ContentType(resource.content_type().to_owned()));
+
+    // Accept-Encoding doesn't affect the response unless gzip is turned on
+    if ctx.opts.gzip.is_some() {
+        res.headers_mut()
+            .set(header::Vary::Items(vec![
+                unicase::Ascii::new("Accept-Encoding".to_owned())
+            ]));
+    }
 
     // Only set max-age if it's configured at all.
     if let Some(max_age) = ctx.opts.cache.as_ref().map(|opts| opts.max_age) {
