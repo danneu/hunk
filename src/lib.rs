@@ -14,23 +14,15 @@ extern crate unicase;
 
 // 3rd party
 
-use futures::{stream, Future, Sink, Stream};
+use futures::{stream, Future};
 use futures_cpupool::CpuPool;
 
-use hyper::{Chunk, Method, StatusCode};
+use hyper::{Method, StatusCode};
 use hyper::server::{Request, Response};
 use hyper::header;
 
-use flate2::write::GzEncoder;
-
 use std::fs::File;
-use std::sync::Arc;
-use std::io::{self, Write};
-use std::ops::Range;
-use std::time;
 use std::path::{self, Path, PathBuf};
-use std::os::unix::fs::{FileExt, MetadataExt};
-use std::collections::HashSet;
 
 // 1st party
 
@@ -39,10 +31,14 @@ mod negotiation;
 mod mime;
 mod base36;
 mod util;
+mod chunks;
+mod resource;
 pub mod config;
 pub mod options;
 
 use range::RequestedRange;
+use chunks::ChunkStream;
+use resource::Resource;
 
 const CHUNK_SIZE: u64 = 65_536;
 
@@ -58,130 +54,6 @@ impl HttpService {
     pub fn new(ctx: &'static Context) -> HttpService {
         HttpService(ctx)
     }
-}
-
-type ChunkStream = Box<Stream<Item = Chunk, Error = hyper::Error> + Send>;
-
-trait ChunkStreamable {
-    fn get_range(&self, range: Range<u64>) -> ChunkStream;
-}
-
-struct ResourceInner {
-    inode: u64,
-    len: u64,
-    mtime: time::SystemTime,
-    content_type: mime::MimeRecord,
-    file: File,
-    pool: CpuPool,
-}
-
-#[derive(Clone)]
-struct Resource {
-    inner: Arc<ResourceInner>,
-}
-
-impl Resource {
-    fn new(file: File, pool: CpuPool, content_type: mime::MimeRecord) -> Result<Self, io::Error> {
-        let m = file.metadata()?;
-        Ok(Resource {
-            inner: Arc::new(ResourceInner {
-                inode: m.ino(),
-                len: m.len(),
-                mtime: m.modified()?,
-                file,
-                pool,
-                content_type,
-            }),
-        })
-    }
-
-    fn len(&self) -> u64 {
-        self.inner.len
-    }
-
-    fn content_type(&self) -> &mime::MimeRecord {
-        &self.inner.content_type
-    }
-
-    fn last_modified(&self) -> header::HttpDate {
-        header::HttpDate::from(self.inner.mtime)
-    }
-
-    fn etag(&self, strong: bool) -> header::EntityTag {
-        let dur = self.inner
-            .mtime
-            .duration_since(time::UNIX_EPOCH)
-            .unwrap_or_else(|_| time::Duration::new(0, 0));
-
-        let tag = format!(
-            "{}${}${}",
-            base36::encode(self.inner.inode),
-            base36::encode(self.len()),
-            base36::encode(util::as_millis(dur))
-        );
-
-        if strong {
-            header::EntityTag::strong(tag)
-        } else {
-            header::EntityTag::weak(tag)
-        }
-    }
-}
-
-impl ChunkStreamable for Resource {
-    fn get_range(&self, range: Range<u64>) -> ChunkStream {
-        let stream =
-            futures::stream::unfold((range, Arc::clone(&self.inner)), move |(left, inner)| {
-                if left.start == left.end {
-                    return None;
-                }
-                let chunk_size = std::cmp::min(CHUNK_SIZE, left.end - left.start) as usize;
-                let mut chunk = Vec::with_capacity(chunk_size);
-                unsafe { chunk.set_len(chunk_size) };
-                let bytes_read = match inner.file.read_at(&mut chunk, left.start) {
-                    Err(e) => return Some(Err(hyper::Error::from(e))),
-                    Ok(n) => n,
-                };
-                chunk.truncate(bytes_read);
-                Some(Ok((
-                    Chunk::from(chunk),
-                    (left.start + bytes_read as u64..left.end, inner),
-                )))
-            });
-
-        let stream: ChunkStream = {
-            let (tx, rx) = ::futures::sync::mpsc::channel(0);
-            self.inner.pool.spawn(tx.send_all(stream.then(Ok))).forget();
-            Box::new(
-                rx.map_err(|()| unreachable!())
-                    .and_then(::futures::future::result),
-            )
-        };
-
-        stream
-    }
-}
-
-// Gzip each chunk with the given compression level.
-fn gzip(body: ChunkStream, level: ::flate2::Compression) -> ChunkStream {
-    Box::new(body.and_then(move |chunk| {
-        let mut encoder = GzEncoder::new(Vec::new(), level);
-        encoder
-            .write(chunk.as_ref())
-            .and_then(|_| encoder.finish())
-            .map(|vec| vec.into())
-            .map_err(|e| e.into())
-    }))
-}
-
-lazy_static! {
-    static ref ALLOWED_METHODS: HashSet<Method> = {
-        let mut set = HashSet::new();
-        set.insert(Method::Get);
-        set.insert(Method::Head);
-        set.insert(Method::Options);
-        set
-    };
 }
 
 fn is_not_modified(resource: &Resource, req: &Request, resource_etag: &header::EntityTag) -> bool {
@@ -228,7 +100,7 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
         Ok(resource) => resource,
     };
 
-    if !ALLOWED_METHODS.contains(req.method()) {
+    if *req.method() != Method::Get && *req.method() != Method::Head && *req.method() != Method::Options {
         return method_not_allowed();
     }
 
@@ -311,7 +183,7 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
             _ => 0..resource.len(),
         };
 
-        resource.get_range(range)
+        resource.get_range(range, CHUNK_SIZE)
     };
 
     if should_gzip {
@@ -325,7 +197,7 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
     }
 
     if should_gzip {
-        res.with_body(gzip(body, ctx.opts.gzip.as_ref().unwrap().level))
+        res.with_body(chunks::gzip(body, ctx.opts.gzip.as_ref().unwrap().level))
     } else {
         res.with_body(body)
     }

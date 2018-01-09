@@ -6,7 +6,7 @@ use std::str::FromStr;
 use mime::MimeRecord;
 
 lazy_static! {
-    pub static ref EXT_TO_MIME: HashMap<Ascii<&'static str>, MimeRecord> = {
+    pub static ref BY_EXTENSION: HashMap<Ascii<&'static str>, MimeRecord> = {
         let mut x = HashMap::new();
         x.insert(Ascii::new("123"), MimeRecord { mime: Mime::from_str("application/vnd.lotus-1-2-3").unwrap(), compressible: false });
         x.insert(Ascii::new("3dml"), MimeRecord { mime: Mime::from_str("text/vnd.in3d.3dml").unwrap(), compressible: false });

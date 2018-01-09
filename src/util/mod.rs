@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+// Junk drawer of uncategorized functions.
+
 const NANOS_PER_MILLI: u64 = 1_000_000;
 const MILLIS_PER_SEC: u64 = 1_000;
 

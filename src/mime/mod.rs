@@ -29,7 +29,7 @@ fn octet_stream() -> MimeRecord {
 }
 
 fn ext_to_mime(ext: &str) -> MimeRecord {
-    records::EXT_TO_MIME
+    records::BY_EXTENSION
         .get(&Ascii::new(ext))
         .cloned()
         .unwrap_or_else(octet_stream)
