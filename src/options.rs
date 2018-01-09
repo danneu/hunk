@@ -47,7 +47,7 @@ impl Default for Options {
 #[derive(Clone)]
 pub enum Origin {
     Any,
-    Few(Vec<header::Origin>)
+    Few(Vec<header::Origin>),
 }
 
 #[derive(Clone)]
@@ -95,19 +95,19 @@ impl Options {
             o.cors = Some(Cors {
                 methods,
                 allowed_headers,
-                exposed_headers: cors.exposed_headers.into_iter().map(|s| Ascii::new(s)).collect(),
+                exposed_headers: cors.exposed_headers
+                    .into_iter()
+                    .map(|s| Ascii::new(s))
+                    .collect(),
                 allow_credentials: cors.allow_credentials,
                 max_age: cors.max_age,
                 origin: match cors.origin {
-                    None =>
-                        Origin::Any,
-                    Some(urls) => {
-                        Origin::Few(
-                            urls.iter().map(|s| {
-                                header::Origin::from_str(s).unwrap()
-                            }).collect()
-                        )
-                    }
+                    None => Origin::Any,
+                    Some(urls) => Origin::Few(
+                        urls.iter()
+                            .map(|s| header::Origin::from_str(s).unwrap())
+                            .collect(),
+                    ),
                 },
             })
         };

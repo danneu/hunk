@@ -213,7 +213,7 @@ fn main() {
                     s.push(' ');
                     let origin = match opts.origin {
                         None => "*".to_string(),
-                        Some(ref urls) => format!("{:?}", urls)
+                        Some(ref urls) => format!("{:?}", urls),
                     };
                     s.push_str(format!("origin={}", origin.bold()).as_ref());
                     s

@@ -33,27 +33,23 @@ impl Default for Server {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum Origin {
     Any,
-    Few(Vec<::toml::Value>)
+    Few(Vec<::toml::Value>),
 }
 
 impl Default for Origin {
-    fn default() -> Origin { Origin::Any }
+    fn default() -> Origin {
+        Origin::Any
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Cors {
-    #[serde(default)]
-    pub origin: Option<Vec<String>>,
-    #[serde(default = "default_cors_methods")]
-    pub methods: Vec<String>,
-    #[serde(default)]
-    pub allowed_headers: Vec<String>,
-    #[serde(default = "default_cors_allow_credentials")]
-    pub allow_credentials: bool,
-    #[serde(default)]
-    pub max_age: Option<u32>,
-    #[serde(default)]
-    pub exposed_headers: Vec<String>,
+    #[serde(default)] pub origin: Option<Vec<String>>,
+    #[serde(default = "default_cors_methods")] pub methods: Vec<String>,
+    #[serde(default)] pub allowed_headers: Vec<String>,
+    #[serde(default = "default_cors_allow_credentials")] pub allow_credentials: bool,
+    #[serde(default)] pub max_age: Option<u32>,
+    #[serde(default)] pub exposed_headers: Vec<String>,
 }
 
 fn default_cors_allow_credentials() -> bool {

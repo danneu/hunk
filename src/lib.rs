@@ -101,11 +101,15 @@ lazy_static! {
 // https://www.w3.org/TR/cors/#resource-processing-model
 //
 // Returns true if response is finished being handled.
-fn handle_cors(cors: Option<&options::Cors>, req: &Request, res: &mut Response<ChunkStream>) -> bool {
+fn handle_cors(
+    cors: Option<&options::Cors>,
+    req: &Request,
+    res: &mut Response<ChunkStream>,
+) -> bool {
     // Bail if user has no cors options configured
     let cors = match cors {
         None => return false,
-        Some(cors) => cors
+        Some(cors) => cors,
     };
 
     // Bail if request has no Origin header
@@ -115,11 +119,8 @@ fn handle_cors(cors: Option<&options::Cors>, req: &Request, res: &mut Response<C
     };
 
     let allow_origin = match cors.origin {
-        options::Origin::Any =>
-            true,
-        options::Origin::Few(ref alloweds) => {
-            alloweds.iter().any(|allowed| allowed == req_origin)
-        }
+        options::Origin::Any => true,
+        options::Origin::Few(ref alloweds) => alloweds.iter().any(|allowed| allowed == req_origin),
     };
 
     // Bail if Origin does not match our allowed set
@@ -133,8 +134,7 @@ fn handle_cors(cors: Option<&options::Cors>, req: &Request, res: &mut Response<C
 
     // Branch the logic between OPTIONS requests and all the rest.
     if *req.method() == Method::Options {
-        res.headers_mut()
-            .set(header::ContentLength(0));
+        res.headers_mut().set(header::ContentLength(0));
         res.headers_mut()
             .set(header::ContentType(::hyper::mime::TEXT_PLAIN_UTF_8));
 
@@ -147,38 +147,43 @@ fn handle_cors(cors: Option<&options::Cors>, req: &Request, res: &mut Response<C
 
         // Bail if unapproved method
         if !cors.methods.contains(actual_method) {
-            return true
+            return true;
         }
 
-        let actual_header_keys: Vec<Ascii<String>> = match req.headers().get::<header::AccessControlRequestHeaders>() {
-            None =>
-                Vec::new(),
-            Some(&header::AccessControlRequestHeaders(ref keys)) =>
-                keys.iter().cloned().collect()
+        let actual_header_keys: Vec<Ascii<String>> = match req.headers()
+            .get::<header::AccessControlRequestHeaders>()
+        {
+            None => Vec::new(),
+            Some(&header::AccessControlRequestHeaders(ref keys)) => keys.iter().cloned().collect(),
         };
 
         // Bail if any header isn't in our approved set
-        if actual_header_keys.iter().any(|k| !cors.allowed_headers.contains(&k)) {
-            return true
+        if actual_header_keys
+            .iter()
+            .any(|k| !cors.allowed_headers.contains(&k))
+        {
+            return true;
         }
 
         // Success, so set the allow origin header.
         res.headers_mut()
-            .set(header::AccessControlAllowOrigin::Value(format!("{}", req_origin)));
+            .set(header::AccessControlAllowOrigin::Value(format!(
+                "{}",
+                req_origin
+            )));
 
         if cors.allow_credentials {
-            res.headers_mut()
-                .set(header::AccessControlAllowCredentials);
+            res.headers_mut().set(header::AccessControlAllowCredentials);
         }
 
         if let Some(max_age) = cors.max_age {
-            res.headers_mut()
-                .set(header::AccessControlMaxAge(max_age));
+            res.headers_mut().set(header::AccessControlMaxAge(max_age));
         }
 
         // Don't have to add these headers if method is a simple cors method.
-        res.headers_mut()
-            .set(header::AccessControlAllowMethods(cors.methods.iter().cloned().collect()));
+        res.headers_mut().set(header::AccessControlAllowMethods(
+            cors.methods.iter().cloned().collect(),
+        ));
 
         // These don't make much sense either since it's just a static file server, but
         // I can always remove it later.
@@ -186,37 +191,39 @@ fn handle_cors(cors: Option<&options::Cors>, req: &Request, res: &mut Response<C
             !SIMPLE_CORS_HEADERS.contains(k) || k == &Ascii::new("Content-Type".to_string())
         }) {
             res.headers_mut().set(header::AccessControlAllowHeaders(
-                cors.allowed_headers.iter().cloned().collect()
+                cors.allowed_headers.iter().cloned().collect(),
             ))
-
         }
 
-        return true
+        return true;
     } else {
         // Non-preflight requests
         res.headers_mut()
-            .set(header::AccessControlAllowOrigin::Value(format!("{}", req_origin)));
+            .set(header::AccessControlAllowOrigin::Value(format!(
+                "{}",
+                req_origin
+            )));
 
         if cors.allow_credentials {
-            res.headers_mut()
-                .set(header::AccessControlAllowCredentials);
+            res.headers_mut().set(header::AccessControlAllowCredentials);
         }
 
         if !cors.exposed_headers.is_empty() {
-            res.headers_mut()
-                .set(header::AccessControlExposeHeaders(cors.exposed_headers.iter().cloned().collect()))
+            res.headers_mut().set(header::AccessControlExposeHeaders(
+                cors.exposed_headers.iter().cloned().collect(),
+            ))
         }
 
-        return false
+        return false;
     }
 }
 
 fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
     if *req.method() != Method::Get && *req.method() != Method::Head
         && *req.method() != Method::Options
-        {
-            return method_not_allowed();
-        }
+    {
+        return method_not_allowed();
+    }
 
     let resource_path = match get_resource_path(&ctx.root, req.uri().path()) {
         None => return not_found(),
@@ -368,9 +375,7 @@ impl hyper::server::Service for HttpService {
     fn call(&self, req: Request) -> Self::Future {
         let ctx = self.0;
 
-        let work = move || {
-            Ok(handler(ctx, &req))
-        };
+        let work = move || Ok(handler(ctx, &req));
 
         Box::new(ctx.pool.spawn_fn(work))
     }
