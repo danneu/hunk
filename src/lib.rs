@@ -20,7 +20,6 @@ use futures_cpupool::CpuPool;
 use hyper::{Chunk, Method, StatusCode};
 use hyper::server::{Request, Response};
 use hyper::header;
-use hyper::mime as hypermime;
 
 use flate2::write::GzEncoder;
 
@@ -71,7 +70,7 @@ struct ResourceInner {
     inode: u64,
     len: u64,
     mtime: time::SystemTime,
-    content_type: ::hypermime::Mime,
+    content_type: mime::MimeRecord,
     file: File,
     pool: CpuPool,
 }
@@ -82,7 +81,7 @@ struct Resource {
 }
 
 impl Resource {
-    fn new(file: File, pool: CpuPool, content_type: hypermime::Mime) -> Result<Self, io::Error> {
+    fn new(file: File, pool: CpuPool, content_type: mime::MimeRecord) -> Result<Self, io::Error> {
         let m = file.metadata()?;
         Ok(Resource {
             inner: Arc::new(ResourceInner {
@@ -100,7 +99,7 @@ impl Resource {
         self.inner.len
     }
 
-    fn content_type(&self) -> &hypermime::Mime {
+    fn content_type(&self) -> &mime::MimeRecord {
         &self.inner.content_type
     }
 
@@ -239,7 +238,7 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
         .gzip
         .as_ref()
         .map(|opts| {
-            resource.len() >= opts.threshold && mime::is_compressible_path(&resource_path)
+            resource.len() >= opts.threshold && resource.content_type().compressible
                 && negotiation::negotiate_encoding(req.headers().get::<header::AcceptEncoding>())
                     == Some(header::Encoding::Gzip)
         })
@@ -277,7 +276,7 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
     res.headers_mut()
         .set(header::LastModified(resource.last_modified()));
     res.headers_mut()
-        .set(header::ContentType(resource.content_type().to_owned()));
+        .set(header::ContentType(resource.content_type().mime.clone()));
 
     // Accept-Encoding doesn't affect the response unless gzip is turned on
     if ctx.opts.gzip.is_some() {
