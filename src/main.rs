@@ -11,7 +11,6 @@ extern crate libc;
 extern crate toml;
 
 use clap::{App, Arg};
-use futures_cpupool::CpuPool;
 use colored::Colorize;
 use std::net::IpAddr;
 use std::net::SocketAddr;

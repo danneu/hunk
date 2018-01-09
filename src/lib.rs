@@ -162,7 +162,7 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
     // - Don't set Content-Length if Transfer-Encoding != 'identity'
     if should_gzip {
         res.headers_mut()
-            .set(header::TransferEncoding(vec![header::Encoding::Gzip]));
+            .set(header::TransferEncoding(vec![header::Encoding::Chunked]));
     } else {
         res.headers_mut().set(header::ContentLength(resource.len()));
     }
