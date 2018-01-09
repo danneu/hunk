@@ -1,8 +1,5 @@
 use config::Config;
-use toml::Value;
-use hyper;
-use hyper::header;
-use hyper::Method;
+use hyper::{self, header, Method};
 use std::str::FromStr;
 use std::collections::HashSet;
 use unicase::Ascii;
@@ -88,7 +85,7 @@ impl Options {
             }
 
             let mut allowed_headers = HashSet::new();
-            for header in cors.allowed_headers.into_iter().map(|s| Ascii::new(s)) {
+            for header in cors.allowed_headers.into_iter().map(Ascii::new) {
                 allowed_headers.insert(header);
             }
 
@@ -97,7 +94,7 @@ impl Options {
                 allowed_headers,
                 exposed_headers: cors.exposed_headers
                     .into_iter()
-                    .map(|s| Ascii::new(s))
+                    .map(Ascii::new)
                     .collect(),
                 allow_credentials: cors.allow_credentials,
                 max_age: cors.max_age,

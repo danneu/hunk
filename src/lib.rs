@@ -154,13 +154,13 @@ fn handle_cors(
             .get::<header::AccessControlRequestHeaders>()
         {
             None => Vec::new(),
-            Some(&header::AccessControlRequestHeaders(ref keys)) => keys.iter().cloned().collect(),
+            Some(&header::AccessControlRequestHeaders(ref keys)) => keys.to_vec(),
         };
 
         // Bail if any header isn't in our approved set
         if actual_header_keys
             .iter()
-            .any(|k| !cors.allowed_headers.contains(&k))
+            .any(|k| !cors.allowed_headers.contains(k))
         {
             return true;
         }
@@ -182,20 +182,21 @@ fn handle_cors(
 
         // Don't have to add these headers if method is a simple cors method.
         res.headers_mut().set(header::AccessControlAllowMethods(
-            cors.methods.iter().cloned().collect(),
+            cors.methods.iter().cloned().collect()
         ));
 
         // These don't make much sense either since it's just a static file server, but
         // I can always remove it later.
-        if actual_header_keys.iter().any(|k| {
+        let nonsimple = |k: &Ascii<String>| -> bool {
             !SIMPLE_CORS_HEADERS.contains(k) || k == &Ascii::new("Content-Type".to_string())
-        }) {
+        };
+        if actual_header_keys.iter().any(nonsimple) {
             res.headers_mut().set(header::AccessControlAllowHeaders(
                 cors.allowed_headers.iter().cloned().collect(),
             ))
         }
 
-        return true;
+        true
     } else {
         // Non-preflight requests
         res.headers_mut()
@@ -210,11 +211,11 @@ fn handle_cors(
 
         if !cors.exposed_headers.is_empty() {
             res.headers_mut().set(header::AccessControlExposeHeaders(
-                cors.exposed_headers.iter().cloned().collect(),
+                cors.exposed_headers.to_vec() //iter().cloned().collect(),
             ))
         }
 
-        return false;
+        false
     }
 }
 
@@ -250,7 +251,7 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
 
     let mut res: Response<ChunkStream> = Response::new();
 
-    if handle_cors(ctx.opts.cors.as_ref(), &req, &mut res) {
+    if handle_cors(ctx.opts.cors.as_ref(), req, &mut res) {
         return res;
     }
 
