@@ -3,6 +3,7 @@ use hyper::{self, header, Method};
 use std::str::FromStr;
 use std::collections::HashSet;
 use unicase::Ascii;
+use logger;
 
 // Not sure if this struct makes much sense, yet.
 //
@@ -18,6 +19,12 @@ pub struct Options {
     pub gzip: Option<Gzip>,
     pub cache: Option<Cache>,
     pub cors: Option<Cors>,
+    pub log: Option<Log>,
+}
+
+#[derive(Clone)]
+pub struct Log {
+    pub logger: logger::Logger
 }
 
 #[derive(Clone)]
@@ -37,6 +44,7 @@ impl Default for Options {
             gzip: None,
             cache: None,
             cors: None,
+            log: None,
         }
     }
 }
@@ -60,6 +68,15 @@ pub struct Cors {
 impl Options {
     pub fn new(config: Config) -> Result<Options, String> {
         let mut o = Options::default();
+
+        if let Some(_) = config.log {
+            o.log = Some(Log {
+                logger: logger::Logger {
+                    dst: logger::Dst::Stdout,
+                    format: logger::COMMON_LOG_FORMAT,
+                }
+            });
+        }
 
         if let Some(opts) = config.gzip {
             if opts.level < 1 || opts.level > 9 {

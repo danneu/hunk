@@ -11,6 +11,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate toml;
 extern crate unicase;
+extern crate chrono;
 
 // 3rd party
 
@@ -23,9 +24,14 @@ use hyper::header;
 
 use unicase::Ascii;
 
+use chrono::format::strftime;
+use chrono::prelude::Utc;
+use chrono::prelude::Local;
+
 use std::fs::File;
 use std::path::{self, Path, PathBuf};
 use std::collections::HashSet;
+use std::time;
 
 // 1st party
 
@@ -36,6 +42,7 @@ mod base36;
 mod util;
 mod chunks;
 mod resource;
+pub mod logger;
 pub mod config;
 pub mod options;
 
@@ -211,13 +218,14 @@ fn handle_cors(
 
         if !cors.exposed_headers.is_empty() {
             res.headers_mut().set(header::AccessControlExposeHeaders(
-                cors.exposed_headers.to_vec() //iter().cloned().collect(),
+                cors.exposed_headers.to_vec()
             ))
         }
 
         false
     }
 }
+
 
 fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
     if *req.method() != Method::Get && *req.method() != Method::Head
@@ -329,7 +337,7 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
         ]));
     }
 
-    let body = {
+    let body: ChunkStream = {
         let range = match range {
             RequestedRange::Satisfiable(mut range) => {
                 res.set_status(StatusCode::PartialContent);
@@ -376,7 +384,16 @@ impl hyper::server::Service for HttpService {
     fn call(&self, req: Request) -> Self::Future {
         let ctx = self.0;
 
-        let work = move || Ok(handler(ctx, &req));
+        let work = move || {
+            let res = handler(ctx, &req);
+
+            if let Some(ref log) = ctx.opts.log {
+                log.logger.log(&req, &res);
+
+            }
+
+            Ok(res)
+        };
 
         Box::new(ctx.pool.spawn_fn(work))
     }

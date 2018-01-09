@@ -21,6 +21,7 @@ use std::fs::File;
 use std::io::Read;
 
 use hunk::HttpService;
+use hunk::options;
 
 /// Leaks a given owned object, returning a reference with the static lifetime.
 /// This can save dealing with reference-counting, lazy statics, or mutexes.
@@ -216,6 +217,20 @@ fn main() {
                         Some(ref urls) => format!("{:?}", urls),
                     };
                     s.push_str(format!("origin={}", origin.bold()).as_ref());
+                    s
+                }
+            }
+        );
+        // FIXME: Really need to merge config and options. Need the parsed options here, not config.
+        println!(
+            "- log: {}",
+            match config.log {
+                None => "off".red().bold().to_string(),
+                Some(_) => {
+//                    let opts = options::Log;
+                    let mut s = format!("{}", "on".green().bold());
+                    s.push(' ');
+                    s.push_str(&format!("dst={}", "stdout".bold()));
                     s
                 }
             }

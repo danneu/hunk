@@ -11,7 +11,11 @@ pub struct Config {
     pub cache: Option<Cache>,
     pub gzip: Option<Gzip>,
     pub cors: Option<Cors>,
+    pub log: Option<Log>,
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Log {}
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Server {
