@@ -100,13 +100,15 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
         Ok(resource) => resource,
     };
 
-    if *req.method() != Method::Get && *req.method() != Method::Head && *req.method() != Method::Options {
+    if *req.method() != Method::Get && *req.method() != Method::Head
+        && *req.method() != Method::Options
+    {
         return method_not_allowed();
     }
 
     // HANDLE CACHING HEADERS
 
-    let should_gzip: bool = ctx.opts
+    let should_gzip = ctx.opts
         .gzip
         .as_ref()
         .map(|opts| {
@@ -162,8 +164,7 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
         res.headers_mut()
             .set(header::TransferEncoding(vec![header::Encoding::Gzip]));
     } else {
-        res.headers_mut()
-            .set(header::ContentLength(resource.len()));
+        res.headers_mut().set(header::ContentLength(resource.len()));
     }
 
     // Accept-Encoding doesn't affect the response unless gzip is turned on
@@ -227,13 +228,23 @@ impl hyper::server::Service for HttpService {
 
     fn call(&self, req: Request) -> Self::Future {
         let ctx = self.0;
+
         let work = move || Ok(handler(ctx, &req));
+
         Box::new(ctx.pool.spawn_fn(work))
     }
 }
 
+// A path is safe if it doesn't try to /./ or /../
+fn is_safe_path(path: &Path) -> bool {
+    path.components().all(|c| match c {
+        path::Component::RootDir | path::Component::Normal(_) => true,
+        _ => false,
+    })
+}
+
 // Join root with request path to get the asset path candidate.
-pub fn get_resource_path(root: &Path, req_path: &str) -> Option<PathBuf> {
+fn get_resource_path(root: &Path, req_path: &str) -> Option<PathBuf> {
     // request path must be absolute
     if !req_path.starts_with('/') {
         return None;
@@ -245,10 +256,7 @@ pub fn get_resource_path(root: &Path, req_path: &str) -> Option<PathBuf> {
     }
 
     // Security: request path cannot climb directories
-    if Path::new(req_path)
-        .components()
-        .any(|c| c == path::Component::ParentDir)
-    {
+    if !is_safe_path(Path::new(req_path)) {
         return None;
     };
 

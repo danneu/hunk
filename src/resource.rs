@@ -5,11 +5,11 @@ use std::os::unix::fs::{FileExt, MetadataExt};
 use std::fs::File;
 use std::sync::Arc;
 
-use futures::{self, Stream, Sink};
+use futures::{self, Sink, Stream};
 use futures_cpupool::CpuPool;
-use hyper::{self, Chunk, header};
+use hyper::{self, header, Chunk};
 
-use chunks::{ChunkStream};
+use chunks::ChunkStream;
 use base36;
 use util;
 use mime;
@@ -29,7 +29,11 @@ pub struct Resource {
 }
 
 impl Resource {
-    pub fn new(file: File, pool: CpuPool, content_type: mime::MimeRecord) -> Result<Self, io::Error> {
+    pub fn new(
+        file: File,
+        pool: CpuPool,
+        content_type: mime::MimeRecord,
+    ) -> Result<Self, io::Error> {
         let m = file.metadata()?;
         Ok(Resource {
             inner: Arc::new(ResourceInner {
@@ -43,6 +47,7 @@ impl Resource {
         })
     }
 
+    // This is entity-length, not message-length. e.g. not affected by transfer-encoding.
     pub fn len(&self) -> u64 {
         self.inner.len
     }

@@ -149,7 +149,10 @@ fn main() {
 
     let ctx = leak(Box::new(hunk::Context {
         root: root.clone(),
-        pool: CpuPool::new(1),
+        pool: ::futures_cpupool::Builder::new()
+            .name_prefix("hunk-thread-")
+            .pool_size(1)
+            .create(),
         opts: opts.clone(),
     }));
 
