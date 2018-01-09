@@ -130,11 +130,16 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
     // - Comes after evaluating precondition headers.
     //   <https://tools.ietf.org/html/rfc7233#section-3.1>
 
-    let range = range::parse_range_header(
-        req.headers().has::<header::Range>(),
-        req.headers().get::<header::Range>(),
-        resource.len(),
-    );
+    let range = if should_gzip {
+        // Ignore Range if response is gzipped
+        RequestedRange::None
+    } else {
+        range::parse_range_header(
+            req.headers().has::<header::Range>(),
+            req.headers().get::<header::Range>(),
+            resource.len(),
+        )
+    };
 
     if let RequestedRange::NotSatisfiable = range {
         return invalid_range(resource.len());
@@ -149,6 +154,17 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
         .set(header::LastModified(resource.last_modified()));
     res.headers_mut()
         .set(header::ContentType(resource.content_type().mime.clone()));
+
+    // More about Content-Length: <https://tools.ietf.org/html/rfc2616#section-4.4>
+    // - Represents length *after* transfer-encoding.
+    // - Don't set Content-Length if Transfer-Encoding != 'identity'
+    if should_gzip {
+        res.headers_mut()
+            .set(header::TransferEncoding(vec![header::Encoding::Gzip]));
+    } else {
+        res.headers_mut()
+            .set(header::ContentLength(resource.len()));
+    }
 
     // Accept-Encoding doesn't affect the response unless gzip is turned on
     if ctx.opts.gzip.is_some() {

@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use futures::{self, Stream, Sink};
 use futures_cpupool::CpuPool;
-use hyper::{self, Chunk, Header};
+use hyper::{self, Chunk, header};
 
 use chunks::{ChunkStream};
 use base36;
