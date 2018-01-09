@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::str::FromStr;
 use hyper::mime::Mime;
 use unicase::Ascii;
 
@@ -16,7 +15,7 @@ pub struct MimeRecord {
 pub fn guess_mime_by_path(path: &Path) -> MimeRecord {
     path.extension()
         .and_then(|os| os.to_str())
-        .map(|ext| ext_to_mime(ext))
+        .map(ext_to_mime)
         .unwrap_or_else(octet_stream)
 }
 
@@ -25,7 +24,7 @@ pub fn guess_mime_by_path(path: &Path) -> MimeRecord {
 fn octet_stream() -> MimeRecord {
     MimeRecord {
         compressible: false,
-        mime: Mime::from_str("application/octet-stream").unwrap(),
+        mime: ::hyper::mime::APPLICATION_OCTET_STREAM,
     }
 }
 
