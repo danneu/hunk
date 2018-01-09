@@ -17,7 +17,7 @@ pub fn guess_mime_by_path(path: &Path) -> MimeRecord {
     path.extension()
         .and_then(|os| os.to_str())
         .map(|ext| ext_to_mime(ext))
-        .unwrap_or_else(|| octet_stream())
+        .unwrap_or_else(octet_stream)
 }
 
 // PRIVATE
@@ -32,6 +32,6 @@ fn octet_stream() -> MimeRecord {
 fn ext_to_mime(ext: &str) -> MimeRecord {
     records::EXT_TO_MIME
         .get(&Ascii::new(ext))
-        .map(|m| m.clone())
-        .unwrap_or_else(|| octet_stream())
+        .cloned()
+        .unwrap_or_else(octet_stream)
 }
