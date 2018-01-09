@@ -1,4 +1,5 @@
 use std::net::Ipv4Addr;
+use hyper::Method;
 
 use toml;
 
@@ -9,6 +10,7 @@ pub struct Config {
     #[serde(default)] pub server: Server,
     pub cache: Option<Cache>,
     pub gzip: Option<Gzip>,
+    pub cors: Option<Cors>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -26,6 +28,45 @@ impl Default for Server {
             root: None,
         }
     }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub enum Origin {
+    Any,
+    Few(Vec<::toml::Value>)
+}
+
+impl Default for Origin {
+    fn default() -> Origin { Origin::Any }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Cors {
+    #[serde(default)]
+    pub origin: Option<Vec<String>>,
+    #[serde(default = "default_cors_methods")]
+    pub methods: Vec<String>,
+    #[serde(default)]
+    pub allowed_headers: Vec<String>,
+    #[serde(default = "default_cors_allow_credentials")]
+    pub allow_credentials: bool,
+    #[serde(default)]
+    pub max_age: Option<u32>,
+    #[serde(default)]
+    pub exposed_headers: Vec<String>,
+}
+
+fn default_cors_allow_credentials() -> bool {
+    false
+}
+
+// TODO: Parse into Methods
+fn default_cors_methods() -> Vec<String> {
+    vec![
+        format!("{}", Method::Get),
+        format!("{}", Method::Head),
+        format!("{}", Method::Options),
+    ]
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

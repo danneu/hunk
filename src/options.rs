@@ -1,4 +1,11 @@
 use config::Config;
+use toml::Value;
+use hyper;
+use hyper::header;
+use hyper::Method;
+use std::str::FromStr;
+use std::collections::HashSet;
+use unicase::Ascii;
 
 // Not sure if this struct makes much sense, yet.
 //
@@ -13,6 +20,7 @@ use config::Config;
 pub struct Options {
     pub gzip: Option<Gzip>,
     pub cache: Option<Cache>,
+    pub cors: Option<Cors>,
 }
 
 #[derive(Clone)]
@@ -31,8 +39,25 @@ impl Default for Options {
         Options {
             gzip: None,
             cache: None,
+            cors: None,
         }
     }
+}
+
+#[derive(Clone)]
+pub enum Origin {
+    Any,
+    Few(Vec<header::Origin>)
+}
+
+#[derive(Clone)]
+pub struct Cors {
+    pub origin: Origin,
+    pub methods: HashSet<hyper::Method>,
+    pub allowed_headers: HashSet<Ascii<String>>,
+    pub exposed_headers: Vec<Ascii<String>>,
+    pub allow_credentials: bool,
+    pub max_age: Option<u32>,
 }
 
 impl Options {
@@ -54,7 +79,38 @@ impl Options {
             o.cache = Some(Cache {
                 max_age: opts.max_age,
             })
-        }
+        };
+
+        if let Some(cors) = config.cors {
+            let mut methods = HashSet::new();
+            for method in cors.methods.iter().map(|s| Method::from_str(s).unwrap()) {
+                methods.insert(method);
+            }
+
+            let mut allowed_headers = HashSet::new();
+            for header in cors.allowed_headers.into_iter().map(|s| Ascii::new(s)) {
+                allowed_headers.insert(header);
+            }
+
+            o.cors = Some(Cors {
+                methods,
+                allowed_headers,
+                exposed_headers: cors.exposed_headers.into_iter().map(|s| Ascii::new(s)).collect(),
+                allow_credentials: cors.allow_credentials,
+                max_age: cors.max_age,
+                origin: match cors.origin {
+                    None =>
+                        Origin::Any,
+                    Some(urls) => {
+                        Origin::Few(
+                            urls.iter().map(|s| {
+                                header::Origin::from_str(s).unwrap()
+                            }).collect()
+                        )
+                    }
+                },
+            })
+        };
 
         Ok(o)
     }
