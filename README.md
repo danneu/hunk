@@ -45,12 +45,21 @@ tells the client to cache all files for 4 hours.
     port = 80
     root = "public"
     
+    # Log to stdout
+    [log]
+    
+    # Apply gzip to compressible files
     [gzip]
     
+    # Set cache-control response header
     [cache]
     max_age = 14400 
     
-If the `[gzip]` and `[cache]` keys did not exist, those features
+    # Set Cross Origin response headers
+    [cors]
+    
+    
+If the `[gzip]` `[cache]`, or `[log]` keys did not exist, those features
 would simply be turned off.
 
 None of the top-level entries (meaning the things that look like `[server]`, `[gzip]`, etc.) themselves are required,
@@ -61,6 +70,10 @@ but some of them have required fields.
 - `host` (optional string): Ipv4 address to bind to. Default = "127.0.0.1".
 - `port` (optional int): Port to bind to. Default = 1337.
 - `root` (optional string): Directory to serve. Default = current directory.
+
+### log
+
+- **(Unimplemented)** `path` (optional string): Destination file for log output. If missing, then logs will be written to stdout.
 
 ### gzip
 
@@ -78,6 +91,19 @@ Sets cache-control header for all successful resource responses.
 
 - `max_age` (required int): Duration of **seconds** the client should cache the file for.
 
+### cors
+
+Add [Cross-Origin Resource Sharing](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) headers to response.
+
+- `origin` (optional array of strings). If none given, then all origins allowed. Ex: `["http://example.com]`. TODO: Require explicit opt-in with "*" or something.
+- `methods` (optional array of strings). Default: `["GET", "HEAD", "OPTIONS"]`.
+- `allowed_headers` (optional array of strings). Default: `[]`. Ex: `["X-Foo", "X-Bar"]`.
+- `exposed_headers` (optional array of strings). Default: `[]`. Ex: `["X-Exposed"]`.
+- `allowed_credentials` (optional bool). Default: `false`.
+- `max_age` (optional int)
+
 ## Development
 
+    git clone https://github.com/danneu/hunk.git
+    cd hunk
     cargo watch -x 'run --bin hunk'
