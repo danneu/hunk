@@ -5,6 +5,8 @@ use std::collections::HashSet;
 use unicase::Ascii;
 use logger;
 
+// TODO: Consolidate with Config.
+
 // Not sure if this struct makes much sense, yet.
 //
 // The idea: Options are the result of validating a Config object and
