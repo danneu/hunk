@@ -72,7 +72,7 @@ impl Options {
     pub fn new(config: Config) -> Result<Options, String> {
         let mut o = Options::default();
 
-        if let Some(_) = config.log {
+        if config.log.is_some() {
             o.log = Some(Log {
                 logger: logger::Logger {
                     dst: logger::Dst::Stdout,
