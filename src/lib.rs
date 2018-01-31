@@ -24,14 +24,9 @@ use hyper::header;
 
 use unicase::Ascii;
 
-use chrono::format::strftime;
-use chrono::prelude::Utc;
-use chrono::prelude::Local;
-
 use std::fs::File;
 use std::path::{self, Path, PathBuf};
 use std::collections::HashSet;
-use std::time;
 
 // 1st party
 
@@ -42,6 +37,7 @@ mod base36;
 mod util;
 mod chunks;
 mod resource;
+mod gzip;
 pub mod logger;
 pub mod config;
 pub mod options;
@@ -369,7 +365,7 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
     }
 
     if should_gzip {
-        res.with_body(chunks::gzip(body, ctx.opts.gzip.as_ref().unwrap().level))
+        res.with_body(gzip::encode(body, ctx.opts.gzip.as_ref().unwrap().level))
     } else {
         res.with_body(body)
     }
