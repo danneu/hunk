@@ -265,7 +265,12 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
         .gzip
         .as_ref()
         .map(|opts| {
-            resource.len() >= opts.threshold && resource.content_type().compressible
+            let compressible = resource.content_type().compressible || resource_path.extension()
+                .and_then(|x| std::ffi::OsStr::to_str(x))
+                .map(|x| Ascii::new(String::from(x)))
+                .map(|ext| opts.also_extensions.contains(&ext))
+                .unwrap_or(false);
+            resource.len() >= opts.threshold && compressible
                 && negotiation::negotiate_encoding(req.headers().get::<header::AcceptEncoding>())
                     == Some(header::Encoding::Gzip)
         })

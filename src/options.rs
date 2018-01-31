@@ -33,6 +33,7 @@ pub struct Log {
 pub struct Gzip {
     pub level: ::flate2::Compression,
     pub threshold: u64,
+    pub also_extensions: HashSet<Ascii<String>>,
 }
 
 #[derive(Clone)]
@@ -85,9 +86,16 @@ impl Options {
                 return Err(format!("gzip.level must be 1-9. actual={}", opts.level));
             }
 
+            let mut also_extensions = HashSet::new();
+
+            opts.also_extensions.into_iter().map(Ascii::new).for_each(|ext| {
+                also_extensions.insert(ext);
+            });
+
             o.gzip = Some(Gzip {
                 level: ::flate2::Compression::new(opts.level),
                 threshold: opts.threshold,
+                also_extensions,
             })
         };
 

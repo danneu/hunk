@@ -75,6 +75,7 @@ pub struct Gzip {
     // IDEA: "best" | "fast" | u32
     #[serde(default = "default_gzip_level")] pub level: u32,
     #[serde(default = "default_gzip_threshold")] pub threshold: u64,
+    #[serde(default)] pub also_extensions: Vec<String>,
 }
 
 // Same as ::flate2::Compression::default()

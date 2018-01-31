@@ -70,9 +70,14 @@ For example, .html is compressible but media files like .jpg and .mp4 are not.
 
 - `level` (optional int): Set the compression level between 1 (fastest) and 9 (best). Default = 6.
 - `threshold` (optional int): Only gzip files when they are at least this long. Default = 1400.
+- `also_extensions` (optional array of strings): Also gzip files with these case-insensitive extensions. Default = []. Ex: `also_extensions = ["toml"]`.
 
 ### cache
 
 Sets cache-control header for all successful resource responses.
 
 - `max_age` (required int): Duration of **seconds** the client should cache the file for.
+
+## Development
+
+    cargo watch -x 'run --bin hunk'

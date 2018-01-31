@@ -21,7 +21,6 @@ use std::fs::File;
 use std::io::Read;
 
 use hunk::HttpService;
-use hunk::options;
 
 /// Leaks a given owned object, returning a reference with the static lifetime.
 /// This can save dealing with reference-counting, lazy statics, or mutexes.
@@ -189,6 +188,10 @@ fn main() {
                     s.push_str(format!("level={}/9", opts.level.to_string().bold()).as_ref());
                     s.push(' ');
                     s.push_str(format!("threshold={}", opts.threshold.to_string().bold()).as_ref());
+                    if !opts.also_extensions.is_empty() {
+                        s.push(' ');
+                        s.push_str(format!("also_extensions={}", format!("{:?}", opts.also_extensions).bold()).as_ref());
+                    }
                     s
                 }
             }
