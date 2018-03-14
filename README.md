@@ -11,7 +11,7 @@ Not exhaustive.
 - [x] File streaming
 - [x] `Range` support
 - [x] Gzip support
-- [ ] Directory index UI
+- [x] Directory index UI
 - [ ] Tests
 
 ## Usage
