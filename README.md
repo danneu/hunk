@@ -58,8 +58,11 @@ tells the client to cache all files for 4 hours.
     # Set Cross Origin response headers
     [cors]
     
+    # Show folder browser on folder requests
+    [browse]
     
-If the `[gzip]` `[cache]`, or `[log]` keys did not exist, those features
+    
+If the `[gzip]` `[cache]`, `[log]`, etc. keys did not exist, those features
 would simply be turned off.
 
 None of the top-level entries (meaning the things that look like `[server]`, `[gzip]`, etc.) themselves are required,
@@ -101,6 +104,15 @@ Add [Cross-Origin Resource Sharing](https://developer.mozilla.org/en-US/docs/Web
 - `exposed_headers` (optional array of strings). Default: `[]`. Ex: `["X-Exposed"]`.
 - `allowed_credentials` (optional bool). Default: `false`.
 - `max_age` (optional int)
+
+### browse
+
+Display folder contents browser.
+
+When browse is enabled, a request for a folder will respond with an
+HTML page that links to all of the contained files.
+
+![browser screenshot](/docs/browse.png)
 
 ## Development
 

@@ -1,4 +1,6 @@
 #![feature(ip_constructors)]
+#![feature(option_filter)]
+#![feature(proc_macro)] // For maud
 
 extern crate flate2;
 extern crate futures;
@@ -12,6 +14,8 @@ extern crate serde_derive;
 extern crate toml;
 extern crate unicase;
 extern crate chrono;
+extern crate maud;
+extern crate pretty_bytes;
 
 // 3rd party
 
@@ -23,6 +27,7 @@ use hyper::server::{Request, Response};
 use hyper::header;
 
 use unicase::Ascii;
+
 
 // Std
 
@@ -40,6 +45,7 @@ mod chunks;
 mod resource;
 mod gzip;
 mod cors;
+mod browse;
 pub mod logger;
 pub mod config;
 pub mod options;
@@ -105,6 +111,14 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
         Err(_) => return not_found(),
         Ok(file) => file,
     };
+
+    if file.metadata().unwrap().is_dir() {
+        if ctx.opts.browse {
+            return browse::handle_folder(ctx.root.as_path(), resource_path.as_path());
+        } else {
+            return not_found()
+        }
+    }
 
     let resource = match Resource::new(
         file,
@@ -278,11 +292,6 @@ fn is_safe_path(path: &Path) -> bool {
 fn get_resource_path(root: &Path, req_path: &str) -> Option<PathBuf> {
     // request path must be absolute
     if !req_path.starts_with('/') {
-        return None;
-    }
-
-    // request path cannot be a directory {
-    if req_path.ends_with('/') {
         return None;
     }
 

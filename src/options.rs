@@ -22,6 +22,7 @@ pub struct Options {
     pub cache: Option<Cache>,
     pub cors: Option<Cors>,
     pub log: Option<Log>,
+    pub browse: bool,
 }
 
 #[derive(Clone)]
@@ -48,6 +49,7 @@ impl Default for Options {
             cache: None,
             cors: None,
             log: None,
+            browse: false,
         }
     }
 }
@@ -71,6 +73,8 @@ pub struct Cors {
 impl Options {
     pub fn new(config: Config) -> Result<Options, String> {
         let mut o = Options::default();
+
+        o.browse = config.browse.is_some();
 
         if config.log.is_some() {
             o.log = Some(Log {

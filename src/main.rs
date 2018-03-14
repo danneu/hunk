@@ -238,6 +238,16 @@ fn main() {
                 }
             }
         );
+        println!(
+            "- browse: {}",
+            match config.browse {
+                None => "off".red().bold().to_string(),
+                Some(_) => {
+                    let mut s = format!("{}", "on".green().bold());
+                    s
+                }
+            }
+        );
     } else {
         println!(
             "[hunk] serving \"{}\" at http://{}",
