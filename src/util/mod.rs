@@ -1,5 +1,8 @@
 use std::time::Duration;
 
+#[macro_use]
+pub mod stopwatch;
+
 // Junk drawer of uncategorized functions.
 
 const NANOS_PER_MILLI: u64 = 1_000_000;

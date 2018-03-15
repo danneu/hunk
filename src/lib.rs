@@ -15,11 +15,10 @@ extern crate toml;
 extern crate unicase;
 extern crate chrono;
 extern crate maud;
-extern crate pretty_bytes;
 
 // 3rd party
 
-use futures::{stream, Future};
+use futures::Future;
 use futures_cpupool::CpuPool;
 
 use hyper::{Method, StatusCode};
@@ -40,12 +39,13 @@ mod range;
 mod negotiation;
 mod mime;
 mod base36;
-mod util;
+#[macro_use] mod util;
 mod chunks;
 mod resource;
 mod gzip;
 mod cors;
 mod browse;
+mod response;
 pub mod logger;
 pub mod config;
 pub mod options;
@@ -99,24 +99,31 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
     if *req.method() != Method::Get && *req.method() != Method::Head
         && *req.method() != Method::Options
     {
-        return method_not_allowed();
+        return response::method_not_allowed();
     }
 
     let resource_path = match get_resource_path(&ctx.root, req.uri().path()) {
-        None => return not_found(),
+        None => return response::not_found(),
         Some(path) => path,
     };
 
     let file = match File::open(&resource_path) {
-        Err(_) => return not_found(),
+        Err(_) => return response::not_found(),
         Ok(file) => file,
     };
 
     if file.metadata().unwrap().is_dir() {
         if ctx.opts.browse {
-            return browse::handle_folder(ctx.root.as_path(), resource_path.as_path());
+            match browse::handle_folder(ctx.root.as_path(), resource_path.as_path()) {
+                Ok(response) =>
+                    return response,
+                Err(e) => {
+                    eprintln!("{}", e);
+                    return response::internal_server_error()
+                }
+            }
         } else {
-            return not_found()
+            return response::not_found()
         }
     }
 
@@ -125,7 +132,7 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
         ctx.pool.clone(),
         mime::guess_mime_by_path(resource_path.as_path()),
     ) {
-        Err(_) => return not_found(),
+        Err(_) => return response::not_found(),
         Ok(resource) => resource,
     };
 
@@ -159,11 +166,11 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
     let resource_etag = resource.etag(!should_gzip);
 
     if is_not_modified(&resource, req, &resource_etag) {
-        return not_modified(resource_etag);
+        return response::not_modified(resource_etag);
     }
 
     if is_precondition_failed(&resource, req, &resource_etag) {
-        return precondition_failed();
+        return response::precondition_failed();
     }
 
     // PARSE RANGE HEADER
@@ -182,7 +189,7 @@ fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
     };
 
     if let RequestedRange::NotSatisfiable = range {
-        return invalid_range(resource.len());
+        return response::invalid_range(resource.len());
     };
 
     res.headers_mut().set(header::ETag(resource_etag));
@@ -306,56 +313,3 @@ fn get_resource_path(root: &Path, req_path: &str) -> Option<PathBuf> {
     Some(final_path)
 }
 
-// CANNED RESPONSES
-
-fn not_found() -> Response<ChunkStream> {
-    let text = b"Not Found";
-    let body: ChunkStream = Box::new(stream::once(Ok(text[..].into())));
-    Response::new()
-        .with_status(StatusCode::NotFound)
-        .with_header(header::ContentLength(text.len() as u64))
-        .with_body(body)
-}
-
-fn precondition_failed() -> Response<ChunkStream> {
-    Response::new()
-        .with_status(StatusCode::PreconditionFailed)
-        .with_header(header::ContentLength(0))
-}
-
-fn not_modified(etag: header::EntityTag) -> Response<ChunkStream> {
-    Response::new()
-        .with_status(StatusCode::NotModified)
-        .with_header(header::ETag(etag)) // Required in 304 response
-        .with_header(header::ContentLength(0))
-}
-
-// TODO: Is OPTIONS part of MethodNotAllowed?
-fn method_not_allowed() -> Response<ChunkStream> {
-    let text = b"This resource only supports GET, HEAD, and OPTIONS.";
-    let body: ChunkStream = Box::new(stream::once(Ok(text[..].into())));
-    Response::new()
-        .with_status(StatusCode::MethodNotAllowed)
-        .with_header(header::ContentLength(text.len() as u64))
-        .with_header(header::ContentType::plaintext())
-        .with_header(header::Allow(vec![
-            Method::Get,
-            Method::Head,
-            Method::Options,
-        ]))
-        .with_body(body)
-}
-
-fn invalid_range(resource_len: u64) -> Response<ChunkStream> {
-    let text = b"Invalid range";
-    let body: ChunkStream = Box::new(stream::once(Ok(text[..].into())));
-    Response::new()
-        .with_status(StatusCode::RangeNotSatisfiable)
-        .with_header(header::ContentRange(header::ContentRangeSpec::Bytes {
-            range: None,
-            instance_length: Some(resource_len),
-        }))
-        .with_header(header::ContentType::plaintext())
-        .with_header(header::ContentLength(text.len() as u64))
-        .with_body(body)
-}
