@@ -1,315 +1,113 @@
-#![feature(ip_constructors)]
+//#![allow(warnings)]
+
+#![feature(conservative_impl_trait)]
+#![feature(macro_at_most_once_rep)]
+#![feature(nll)]
+#![feature(pattern_parentheses)]
 #![feature(option_filter)]
 #![feature(proc_macro)] // For maud
 
-extern crate flate2;
+extern crate url;
+extern crate tokio;
 extern crate futures;
 extern crate futures_cpupool;
+extern crate tokio_core;
+extern crate flate2;
 extern crate hyper;
-#[macro_use]
-extern crate lazy_static;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate toml;
-extern crate unicase;
-extern crate chrono;
 extern crate maud;
+extern crate atty;
+extern crate unicase;
+extern crate colored;
+extern crate chrono;
+extern crate leak;
+extern crate percent_encoding;
+#[macro_use] extern crate lazy_static;
+extern crate serde;
+#[macro_use] extern crate serde_derive;
+extern crate toml;
+extern crate regex;
 
-// 3rd party
-
-use futures::Future;
 use futures_cpupool::CpuPool;
+use futures::{future::{Executor}, Future};
+use futures::{Stream};
+use hyper::{Chunk};
+use hyper::server::{Http};
+use tokio_core::reactor::Core;
+use tokio::net::TcpListener;
+use leak::Leak;
 
-use hyper::{Method, StatusCode};
-use hyper::server::{Request, Response};
-use hyper::header;
+use std::net::SocketAddr;
 
-use unicase::Ascii;
-
-
-// Std
-
-use std::fs::File;
-use std::path::{self, Path, PathBuf};
-
-// 1st party
-
-mod range;
-mod negotiation;
-mod mime;
-mod base36;
-#[macro_use] mod util;
-mod chunks;
-mod resource;
-mod gzip;
-mod cors;
-mod browse;
+mod path;
+mod service;
 mod response;
-pub mod logger;
-pub mod config;
-pub mod options;
+mod compress;
+mod base36;
+mod negotiation;
+mod range;
+#[macro_use] mod util;
+mod entity;
+mod mime;
+mod config_print;
+mod config;
 
-use range::RequestedRange;
-use chunks::ChunkStream;
-use resource::Resource;
+pub use config::Config;
 
-const CHUNK_SIZE: u64 = 65_536;
+pub fn serve(config: Config) {
+    use service::{log::Log, cors::Cors, root::Root, compress::Compress, browse::Browse, gate::Gate};
 
-pub struct Context {
-    pub root: PathBuf,
-    pub pool: CpuPool,
-    pub opts: options::Options,
-}
+    let pool = Box::new(CpuPool::new(1)).leak();
 
-pub struct HttpService(&'static Context);
+    let config = Box::new(config).leak();
 
-impl HttpService {
-    pub fn new(ctx: &'static Context) -> HttpService {
-        HttpService(ctx)
-    }
-}
+    // For Browse middleware.
+    let root = Box::new(config.server.root.clone()).leak();
 
-fn is_not_modified(resource: &Resource, req: &Request, resource_etag: &header::EntityTag) -> bool {
-    if !negotiation::none_match(req.headers().get::<header::IfNoneMatch>(), resource_etag) {
-        true
-    } else if let Some(&header::IfModifiedSince(since)) = req.headers().get() {
-        resource.last_modified() <= since
-    } else {
-        false
-    }
-}
-
-fn is_precondition_failed(
-    resource: &Resource,
-    req: &Request,
-    resource_etag: &header::EntityTag,
-) -> bool {
-    if !negotiation::any_match(req.headers().get::<header::IfMatch>(), resource_etag) {
-        true
-    } else if let Some(&header::IfUnmodifiedSince(since)) = req.headers().get() {
-        resource.last_modified() > since
-    } else {
-        false
-    }
-}
-
-
-fn handler(ctx: &'static Context, req: &Request) -> Response<ChunkStream> {
-    if *req.method() != Method::Get && *req.method() != Method::Head
-        && *req.method() != Method::Options
-    {
-        return response::method_not_allowed();
-    }
-
-    let resource_path = match get_resource_path(&ctx.root, req.uri().path()) {
-        None => return response::not_found(),
-        Some(path) => path,
-    };
-
-    let file = match File::open(&resource_path) {
-        Err(_) => return response::not_found(),
-        Ok(file) => file,
-    };
-
-    if file.metadata().unwrap().is_dir() {
-        if ctx.opts.browse {
-            match browse::handle_folder(ctx.root.as_path(), resource_path.as_path()) {
-                Ok(response) =>
-                    return response,
-                Err(e) => {
-                    eprintln!("{}", e);
-                    return response::internal_server_error()
-                }
-            }
-        } else {
-            return response::not_found()
-        }
-    }
-
-    let resource = match Resource::new(
-        file,
-        ctx.pool.clone(),
-        mime::guess_mime_by_path(resource_path.as_path()),
-    ) {
-        Err(_) => return response::not_found(),
-        Ok(resource) => resource,
-    };
-
-    // CORS
-    // https://www.w3.org/TR/cors/#resource-processing-model
-    // NOTE: The string "*" cannot be used for a resource that supports credentials.
-
-    let mut res: Response<ChunkStream> = Response::new();
-
-    if cors::handle_cors(ctx.opts.cors.as_ref(), req, &mut res) {
-        return res;
-    }
-
-    // HANDLE CACHING HEADERS
-
-    let should_gzip = ctx.opts
-        .gzip
-        .as_ref()
-        .map(|opts| {
-            let compressible = resource.content_type().compressible || resource_path.extension()
-                .and_then(|x| std::ffi::OsStr::to_str(x))
-                .map(|x| Ascii::new(String::from(x)))
-                .map(|ext| opts.also_extensions.contains(&ext))
-                .unwrap_or(false);
-            resource.len() >= opts.threshold && compressible
-                && negotiation::negotiate_encoding(req.headers().get::<header::AcceptEncoding>())
-                    == Some(header::Encoding::Gzip)
-        })
-        .unwrap_or(false);
-
-    let resource_etag = resource.etag(!should_gzip);
-
-    if is_not_modified(&resource, req, &resource_etag) {
-        return response::not_modified(resource_etag);
-    }
-
-    if is_precondition_failed(&resource, req, &resource_etag) {
-        return response::precondition_failed();
-    }
-
-    // PARSE RANGE HEADER
-    // - Comes after evaluating precondition headers.
-    //   <https://tools.ietf.org/html/rfc7233#section-3.1>
-
-    let range = if should_gzip {
-        // Ignore Range if response is gzipped
-        RequestedRange::None
-    } else {
-        range::parse_range_header(
-            req.headers().has::<header::Range>(),
-            req.headers().get::<header::Range>(),
-            resource.len(),
+    let factory = move |peer: Option<SocketAddr>| {
+        // Request travels from bottom to top,
+        // Response travels from top to bottom.
+        pipe!(
+            Root::new(pool, &config.server),
+            (Browse::new[&config.browse, root.as_path()]),
+            (Cors::new[&config.cors]),
+            (Compress::new[pool, &config.gzip]),
+            (Log::new[peer, &config.log]),
+            (Gate::new[])
         )
     };
 
-    if let RequestedRange::NotSatisfiable = range {
-        return response::invalid_range(resource.len());
-    };
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
 
-    res.headers_mut().set(header::ETag(resource_etag));
-    res.headers_mut()
-        .set(header::AcceptRanges(vec![header::RangeUnit::Bytes]));
-    res.headers_mut()
-        .set(header::LastModified(resource.last_modified()));
-    res.headers_mut()
-        .set(header::ContentType(resource.content_type().mime.clone()));
+    let mut http: Http<Chunk> = Http::new();
+    http.sleep_on_errors(true);
 
-    // More about Content-Length: <https://tools.ietf.org/html/rfc2616#section-4.4>
-    // - Represents length *after* transfer-encoding.
-    // - Don't set Content-Length if Transfer-Encoding != 'identity'
-    if should_gzip {
-        res.headers_mut()
-            .set(header::TransferEncoding(vec![header::Encoding::Chunked]));
+    let listener = TcpListener::bind(&config.server.addr).unwrap();
+    let server = listener.incoming().for_each(|tcp| {
+        let peer = tcp.peer_addr().ok();
+        let conn = http.serve_connection(tcp, factory(peer))
+            .map(|_| ())
+            .map_err(|_e| {
+                // Note: Noisy (epipe)
+                // eprintln!("http.serve_connection error: {:?}", e);
+                ()
+            });
+
+        handle.execute(conn)
+            .map(|_| ())
+            .map_err(|e| {
+                eprintln!("executor.handle error: {:?}", e);
+                // TODO: Figure out how to handle this.
+                // For now, just unify with expected io::Error
+                std::io::Error::new(std::io::ErrorKind::Other, "temp error")
+            })
+    });
+
+    if atty::is(atty::Stream::Stdout) {
+        config_print::pretty(&config);
     } else {
-        res.headers_mut().set(header::ContentLength(resource.len()));
+        config_print::minimal(&config);
     }
 
-    // Accept-Encoding doesn't affect the response unless gzip is turned on
-    if ctx.opts.gzip.is_some() {
-        res.headers_mut().set(header::Vary::Items(vec![
-            unicase::Ascii::new("Accept-Encoding".to_owned()),
-        ]));
-    }
-
-    // Only set max-age if it's configured at all.
-    if let Some(max_age) = ctx.opts.cache.as_ref().map(|opts| opts.max_age) {
-        res.headers_mut().set(header::CacheControl(vec![
-            header::CacheDirective::Public,
-            header::CacheDirective::MaxAge(max_age),
-        ]));
-    }
-
-    let body: ChunkStream = {
-        let range = match range {
-            RequestedRange::Satisfiable(mut range) => {
-                res.set_status(StatusCode::PartialContent);
-                res.headers_mut()
-                    .set(header::ContentRange(header::ContentRangeSpec::Bytes {
-                        range: Some((range.start, range.end)),
-                        instance_length: Some(resource.len()),
-                    }));
-
-                // NOTE: Range header is end-inclusive but std::ops::Range is end-exclusive.
-                range.end += 1;
-
-                range
-            }
-            _ => 0..resource.len(),
-        };
-
-        resource.get_range(range, CHUNK_SIZE)
-    };
-
-    if should_gzip {
-        res.headers_mut()
-            .set(header::ContentEncoding(vec![header::Encoding::Gzip]));
-    }
-
-    // For HEAD requests, we do all the work except sending the body.
-    if *req.method() == Method::Head {
-        return res;
-    }
-
-    if should_gzip {
-        res.with_body(gzip::encode(body, ctx.opts.gzip.as_ref().unwrap().level))
-    } else {
-        res.with_body(body)
-    }
+    core.run(server).unwrap();
 }
-
-impl hyper::server::Service for HttpService {
-    type Request = Request;
-    type Response = Response<ChunkStream>;
-    type Error = hyper::Error;
-    type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
-
-    fn call(&self, req: Request) -> Self::Future {
-        let ctx = self.0;
-
-        let work = move || {
-            let res = handler(ctx, &req);
-
-            if let Some(ref log) = ctx.opts.log {
-                log.logger.log(&req, &res);
-
-            }
-
-            Ok(res)
-        };
-
-        Box::new(ctx.pool.spawn_fn(work))
-    }
-}
-
-// A path is safe if it doesn't try to /./ or /../
-fn is_safe_path(path: &Path) -> bool {
-    path.components().all(|c| match c {
-        path::Component::RootDir | path::Component::Normal(_) => true,
-        _ => false,
-    })
-}
-
-// Join root with request path to get the asset path candidate.
-fn get_resource_path(root: &Path, req_path: &str) -> Option<PathBuf> {
-    // request path must be absolute
-    if !req_path.starts_with('/') {
-        return None;
-    }
-
-    // Security: request path cannot climb directories
-    if !is_safe_path(Path::new(req_path)) {
-        return None;
-    };
-
-    let mut final_path = root.to_path_buf();
-    final_path.push(&req_path[1..]);
-
-    Some(final_path)
-}
-

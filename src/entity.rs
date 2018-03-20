@@ -1,42 +1,48 @@
 use std::ops::Range;
-use std::time;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::io;
 use std::os::unix::fs::{FileExt, MetadataExt};
 use std::fs::File;
 use std::sync::Arc;
+use std::cmp;
 
-use futures::{self, Sink, Stream};
 use futures_cpupool::CpuPool;
-use hyper::{self, header, Chunk};
+use futures::{stream, Sink, Stream};
+use hyper::{self, header, Body, Chunk};
 
-use chunks::ChunkStream;
 use base36;
-use util;
 use mime;
+use util;
 
-struct ResourceInner {
+struct Inner {
     inode: u64,
     len: u64,
-    mtime: time::SystemTime,
+    mtime: SystemTime,
     content_type: mime::MimeRecord,
     file: File,
     pool: CpuPool,
 }
 
 #[derive(Clone)]
-pub struct Resource {
-    inner: Arc<ResourceInner>,
+pub struct Entity {
+    inner: Arc<Inner>,
 }
 
-impl Resource {
+#[allow(dead_code)]
+pub enum ETagKind {
+    Strong,
+    Weak,
+}
+
+impl Entity {
     pub fn new(
         file: File,
         pool: CpuPool,
         content_type: mime::MimeRecord,
     ) -> Result<Self, io::Error> {
         let m = file.metadata()?;
-        Ok(Resource {
-            inner: Arc::new(ResourceInner {
+        Ok(Entity {
+            inner: Arc::new(Inner {
                 inode: m.ino(),
                 len: m.len(),
                 mtime: m.modified()?,
@@ -60,55 +66,59 @@ impl Resource {
         header::HttpDate::from(self.inner.mtime)
     }
 
-    pub fn etag(&self, strong: bool) -> header::EntityTag {
+    pub fn etag(&self, kind: &ETagKind) -> header::EntityTag {
         let dur = self.inner
             .mtime
-            .duration_since(time::UNIX_EPOCH)
-            .unwrap_or_else(|_| time::Duration::new(0, 0));
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_else(|_| Duration::new(0, 0));
 
         let tag = format!(
             "{}${}${}",
             base36::encode(self.inner.inode),
             base36::encode(self.len()),
-            base36::encode(util::as_millis(dur))
+            base36::encode(util::duration_as_millis(dur))
         );
 
-        if strong {
-            header::EntityTag::strong(tag)
-        } else {
-            header::EntityTag::weak(tag)
+        match *kind {
+            ETagKind::Strong => header::EntityTag::strong(tag),
+            ETagKind::Weak => header::EntityTag::weak(tag),
         }
     }
 
-    pub fn get_range(&self, range: Range<u64>, max_chunk_size: u64) -> ChunkStream {
-        let stream =
-            futures::stream::unfold((range, Arc::clone(&self.inner)), move |(left, inner)| {
-                if left.start == left.end {
+    pub fn get_range(&self, range: Range<u64>, max_chunk_size: u64) -> Body {
+        let stream = stream::unfold(
+            (range, Arc::clone(&self.inner)),
+            move |(remaining, inner)| {
+                if remaining.start == remaining.end {
                     return None;
                 }
-                let chunk_size = ::std::cmp::min(max_chunk_size, left.end - left.start) as usize;
+
+                // Determine size of next chunk
+                let chunk_size = cmp::min(max_chunk_size, remaining.end - remaining.start) as usize;
+
+                // Read chunk from file
                 let mut chunk = Vec::with_capacity(chunk_size);
                 unsafe { chunk.set_len(chunk_size) };
-                let bytes_read = match inner.file.read_at(&mut chunk, left.start) {
+                let bytes_read = match inner.file.read_at(&mut chunk, remaining.start) {
                     Err(e) => return Some(Err(hyper::Error::from(e))),
                     Ok(n) => n,
                 };
                 chunk.truncate(bytes_read);
+
                 Some(Ok((
                     Chunk::from(chunk),
-                    (left.start + bytes_read as u64..left.end, inner),
+                    (remaining.start + bytes_read as u64..remaining.end, inner),
                 )))
-            });
+            },
+        );
 
-        let stream: ChunkStream = {
-            let (tx, rx) = ::futures::sync::mpsc::channel(0);
-            self.inner.pool.spawn(tx.send_all(stream.then(Ok))).forget();
-            Box::new(
-                rx.map_err(|()| unreachable!())
-                    .and_then(::futures::future::result),
-            )
-        };
+        let (tx, body) = Body::pair();
 
-        stream
+        self.inner
+            .pool
+            .spawn(tx.send_all(stream.map(Ok).map_err(|_e| unreachable!())))
+            .forget();
+
+        body
     }
 }

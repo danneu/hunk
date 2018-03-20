@@ -1,1083 +1,1119 @@
 use unicase::Ascii;
-use std::collections::HashMap;
+use std::collections::{HashSet, HashMap};
 use hyper::mime::Mime;
-use std::str::FromStr;
 
 use mime::MimeRecord;
 
+macro_rules! mimes {
+    ( $( ($ext:expr, $mime:expr, $compressible:expr) ),* $(,)? ) => {
+        {
+            let mut map = ::std::collections::HashMap::new();
+            $(
+                {
+                    let k = Ascii::new($ext);
+                    let v = MimeRecord {
+                        mime: $mime.parse().unwrap(),
+                        compressible: $compressible
+                    };
+
+                    map.insert(k, v);
+                }
+            )*
+
+            map
+        }
+    };
+}
+
 lazy_static! {
+    // TODO: Are there any mime duplicates that have different values of compressible?
+    pub static ref COMPRESSIBLE_BY_MIME: HashSet<Mime> = {
+        let mut xs = HashSet::new();
+
+        for (_, v) in self::BY_EXTENSION.iter() {
+            if v.compressible {
+                xs.insert(v.mime.clone());
+            }
+        }
+
+        xs
+    };
+
     pub static ref BY_EXTENSION: HashMap<Ascii<&'static str>, MimeRecord> = {
-        let mut x = HashMap::new();
-        x.insert(Ascii::new("123"), MimeRecord { mime: Mime::from_str("application/vnd.lotus-1-2-3").unwrap(), compressible: false });
-        x.insert(Ascii::new("3dml"), MimeRecord { mime: Mime::from_str("text/vnd.in3d.3dml").unwrap(), compressible: false });
-        x.insert(Ascii::new("3ds"), MimeRecord { mime: Mime::from_str("image/x-3ds").unwrap(), compressible: false });
-        x.insert(Ascii::new("3g2"), MimeRecord { mime: Mime::from_str("video/3gpp2").unwrap(), compressible: false });
-        x.insert(Ascii::new("3gp"), MimeRecord { mime: Mime::from_str("video/3gpp").unwrap(), compressible: false });
-        x.insert(Ascii::new("3gpp"), MimeRecord { mime: Mime::from_str("video/3gpp").unwrap(), compressible: false });
-        x.insert(Ascii::new("7z"), MimeRecord { mime: Mime::from_str("application/x-7z-compressed").unwrap(), compressible: false });
-        x.insert(Ascii::new("aab"), MimeRecord { mime: Mime::from_str("application/x-authorware-bin").unwrap(), compressible: false });
-        x.insert(Ascii::new("aac"), MimeRecord { mime: Mime::from_str("audio/x-aac").unwrap(), compressible: false });
-        x.insert(Ascii::new("aam"), MimeRecord { mime: Mime::from_str("application/x-authorware-map").unwrap(), compressible: false });
-        x.insert(Ascii::new("aas"), MimeRecord { mime: Mime::from_str("application/x-authorware-seg").unwrap(), compressible: false });
-        x.insert(Ascii::new("abw"), MimeRecord { mime: Mime::from_str("application/x-abiword").unwrap(), compressible: false });
-        x.insert(Ascii::new("ac"), MimeRecord { mime: Mime::from_str("application/pkix-attr-cert").unwrap(), compressible: false });
-        x.insert(Ascii::new("acc"), MimeRecord { mime: Mime::from_str("application/vnd.americandynamics.acc").unwrap(), compressible: false });
-        x.insert(Ascii::new("ace"), MimeRecord { mime: Mime::from_str("application/x-ace-compressed").unwrap(), compressible: false });
-        x.insert(Ascii::new("acu"), MimeRecord { mime: Mime::from_str("application/vnd.acucobol").unwrap(), compressible: false });
-        x.insert(Ascii::new("acutc"), MimeRecord { mime: Mime::from_str("application/vnd.acucorp").unwrap(), compressible: false });
-        x.insert(Ascii::new("adp"), MimeRecord { mime: Mime::from_str("audio/adpcm").unwrap(), compressible: false });
-        x.insert(Ascii::new("aep"), MimeRecord { mime: Mime::from_str("application/vnd.audiograph").unwrap(), compressible: false });
-        x.insert(Ascii::new("afm"), MimeRecord { mime: Mime::from_str("application/x-font-type1").unwrap(), compressible: false });
-        x.insert(Ascii::new("afp"), MimeRecord { mime: Mime::from_str("application/vnd.ibm.modcap").unwrap(), compressible: false });
-        x.insert(Ascii::new("ahead"), MimeRecord { mime: Mime::from_str("application/vnd.ahead.space").unwrap(), compressible: false });
-        x.insert(Ascii::new("ai"), MimeRecord { mime: Mime::from_str("application/postscript").unwrap(), compressible: true });
-        x.insert(Ascii::new("aif"), MimeRecord { mime: Mime::from_str("audio/x-aiff").unwrap(), compressible: false });
-        x.insert(Ascii::new("aifc"), MimeRecord { mime: Mime::from_str("audio/x-aiff").unwrap(), compressible: false });
-        x.insert(Ascii::new("aiff"), MimeRecord { mime: Mime::from_str("audio/x-aiff").unwrap(), compressible: false });
-        x.insert(Ascii::new("air"), MimeRecord { mime: Mime::from_str("application/vnd.adobe.air-application-installer-package+zip").unwrap(), compressible: false });
-        x.insert(Ascii::new("ait"), MimeRecord { mime: Mime::from_str("application/vnd.dvb.ait").unwrap(), compressible: false });
-        x.insert(Ascii::new("ami"), MimeRecord { mime: Mime::from_str("application/vnd.amiga.ami").unwrap(), compressible: false });
-        x.insert(Ascii::new("apk"), MimeRecord { mime: Mime::from_str("application/vnd.android.package-archive").unwrap(), compressible: false });
-        x.insert(Ascii::new("apng"), MimeRecord { mime: Mime::from_str("image/apng").unwrap(), compressible: false });
-        x.insert(Ascii::new("appcache"), MimeRecord { mime: Mime::from_str("text/cache-manifest").unwrap(), compressible: true });
-        x.insert(Ascii::new("application"), MimeRecord { mime: Mime::from_str("application/x-ms-application").unwrap(), compressible: false });
-        x.insert(Ascii::new("apr"), MimeRecord { mime: Mime::from_str("application/vnd.lotus-approach").unwrap(), compressible: false });
-        x.insert(Ascii::new("arc"), MimeRecord { mime: Mime::from_str("application/x-freearc").unwrap(), compressible: false });
-        x.insert(Ascii::new("arj"), MimeRecord { mime: Mime::from_str("application/x-arj").unwrap(), compressible: false });
-        x.insert(Ascii::new("asc"), MimeRecord { mime: Mime::from_str("application/pgp-signature").unwrap(), compressible: false });
-        x.insert(Ascii::new("asf"), MimeRecord { mime: Mime::from_str("video/x-ms-asf").unwrap(), compressible: false });
-        x.insert(Ascii::new("asm"), MimeRecord { mime: Mime::from_str("text/x-asm").unwrap(), compressible: false });
-        x.insert(Ascii::new("aso"), MimeRecord { mime: Mime::from_str("application/vnd.accpac.simply.aso").unwrap(), compressible: false });
-        x.insert(Ascii::new("asx"), MimeRecord { mime: Mime::from_str("video/x-ms-asf").unwrap(), compressible: false });
-        x.insert(Ascii::new("atc"), MimeRecord { mime: Mime::from_str("application/vnd.acucorp").unwrap(), compressible: false });
-        x.insert(Ascii::new("atom"), MimeRecord { mime: Mime::from_str("application/atom+xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("atomcat"), MimeRecord { mime: Mime::from_str("application/atomcat+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("atomsvc"), MimeRecord { mime: Mime::from_str("application/atomsvc+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("atx"), MimeRecord { mime: Mime::from_str("application/vnd.antix.game-component").unwrap(), compressible: false });
-        x.insert(Ascii::new("au"), MimeRecord { mime: Mime::from_str("audio/basic").unwrap(), compressible: false });
-        x.insert(Ascii::new("avi"), MimeRecord { mime: Mime::from_str("video/x-msvideo").unwrap(), compressible: false });
-        x.insert(Ascii::new("aw"), MimeRecord { mime: Mime::from_str("application/applixware").unwrap(), compressible: false });
-        x.insert(Ascii::new("azf"), MimeRecord { mime: Mime::from_str("application/vnd.airzip.filesecure.azf").unwrap(), compressible: false });
-        x.insert(Ascii::new("azs"), MimeRecord { mime: Mime::from_str("application/vnd.airzip.filesecure.azs").unwrap(), compressible: false });
-        x.insert(Ascii::new("azw"), MimeRecord { mime: Mime::from_str("application/vnd.amazon.ebook").unwrap(), compressible: false });
-        x.insert(Ascii::new("bat"), MimeRecord { mime: Mime::from_str("application/x-msdownload").unwrap(), compressible: false });
-        x.insert(Ascii::new("bcpio"), MimeRecord { mime: Mime::from_str("application/x-bcpio").unwrap(), compressible: false });
-        x.insert(Ascii::new("bdf"), MimeRecord { mime: Mime::from_str("application/x-font-bdf").unwrap(), compressible: false });
-        x.insert(Ascii::new("bdm"), MimeRecord { mime: Mime::from_str("application/vnd.syncml.dm+wbxml").unwrap(), compressible: false });
-        x.insert(Ascii::new("bdoc"), MimeRecord { mime: Mime::from_str("application/bdoc").unwrap(), compressible: false });
-        x.insert(Ascii::new("bed"), MimeRecord { mime: Mime::from_str("application/vnd.realvnc.bed").unwrap(), compressible: false });
-        x.insert(Ascii::new("bh2"), MimeRecord { mime: Mime::from_str("application/vnd.fujitsu.oasysprs").unwrap(), compressible: false });
-        x.insert(Ascii::new("bin"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("blb"), MimeRecord { mime: Mime::from_str("application/x-blorb").unwrap(), compressible: false });
-        x.insert(Ascii::new("blorb"), MimeRecord { mime: Mime::from_str("application/x-blorb").unwrap(), compressible: false });
-        x.insert(Ascii::new("bmi"), MimeRecord { mime: Mime::from_str("application/vnd.bmi").unwrap(), compressible: false });
-        x.insert(Ascii::new("bmp"), MimeRecord { mime: Mime::from_str("image/bmp").unwrap(), compressible: true });
-        x.insert(Ascii::new("book"), MimeRecord { mime: Mime::from_str("application/vnd.framemaker").unwrap(), compressible: false });
-        x.insert(Ascii::new("box"), MimeRecord { mime: Mime::from_str("application/vnd.previewsystems.box").unwrap(), compressible: false });
-        x.insert(Ascii::new("boz"), MimeRecord { mime: Mime::from_str("application/x-bzip2").unwrap(), compressible: false });
-        x.insert(Ascii::new("bpk"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("btif"), MimeRecord { mime: Mime::from_str("image/prs.btif").unwrap(), compressible: false });
-        x.insert(Ascii::new("buffer"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("bz"), MimeRecord { mime: Mime::from_str("application/x-bzip").unwrap(), compressible: false });
-        x.insert(Ascii::new("bz2"), MimeRecord { mime: Mime::from_str("application/x-bzip2").unwrap(), compressible: false });
-        x.insert(Ascii::new("c"), MimeRecord { mime: Mime::from_str("text/x-c").unwrap(), compressible: false });
-        x.insert(Ascii::new("c11amc"), MimeRecord { mime: Mime::from_str("application/vnd.cluetrust.cartomobile-config").unwrap(), compressible: false });
-        x.insert(Ascii::new("c11amz"), MimeRecord { mime: Mime::from_str("application/vnd.cluetrust.cartomobile-config-pkg").unwrap(), compressible: false });
-        x.insert(Ascii::new("c4d"), MimeRecord { mime: Mime::from_str("application/vnd.clonk.c4group").unwrap(), compressible: false });
-        x.insert(Ascii::new("c4f"), MimeRecord { mime: Mime::from_str("application/vnd.clonk.c4group").unwrap(), compressible: false });
-        x.insert(Ascii::new("c4g"), MimeRecord { mime: Mime::from_str("application/vnd.clonk.c4group").unwrap(), compressible: false });
-        x.insert(Ascii::new("c4p"), MimeRecord { mime: Mime::from_str("application/vnd.clonk.c4group").unwrap(), compressible: false });
-        x.insert(Ascii::new("c4u"), MimeRecord { mime: Mime::from_str("application/vnd.clonk.c4group").unwrap(), compressible: false });
-        x.insert(Ascii::new("cab"), MimeRecord { mime: Mime::from_str("application/vnd.ms-cab-compressed").unwrap(), compressible: false });
-        x.insert(Ascii::new("caf"), MimeRecord { mime: Mime::from_str("audio/x-caf").unwrap(), compressible: false });
-        x.insert(Ascii::new("cap"), MimeRecord { mime: Mime::from_str("application/vnd.tcpdump.pcap").unwrap(), compressible: false });
-        x.insert(Ascii::new("car"), MimeRecord { mime: Mime::from_str("application/vnd.curl.car").unwrap(), compressible: false });
-        x.insert(Ascii::new("cat"), MimeRecord { mime: Mime::from_str("application/vnd.ms-pki.seccat").unwrap(), compressible: false });
-        x.insert(Ascii::new("cb7"), MimeRecord { mime: Mime::from_str("application/x-cbr").unwrap(), compressible: false });
-        x.insert(Ascii::new("cba"), MimeRecord { mime: Mime::from_str("application/x-cbr").unwrap(), compressible: false });
-        x.insert(Ascii::new("cbr"), MimeRecord { mime: Mime::from_str("application/x-cbr").unwrap(), compressible: false });
-        x.insert(Ascii::new("cbt"), MimeRecord { mime: Mime::from_str("application/x-cbr").unwrap(), compressible: false });
-        x.insert(Ascii::new("cbz"), MimeRecord { mime: Mime::from_str("application/x-cbr").unwrap(), compressible: false });
-        x.insert(Ascii::new("cc"), MimeRecord { mime: Mime::from_str("text/x-c").unwrap(), compressible: false });
-        x.insert(Ascii::new("cco"), MimeRecord { mime: Mime::from_str("application/x-cocoa").unwrap(), compressible: false });
-        x.insert(Ascii::new("cct"), MimeRecord { mime: Mime::from_str("application/x-director").unwrap(), compressible: false });
-        x.insert(Ascii::new("ccxml"), MimeRecord { mime: Mime::from_str("application/ccxml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("cdbcmsg"), MimeRecord { mime: Mime::from_str("application/vnd.contact.cmsg").unwrap(), compressible: false });
-        x.insert(Ascii::new("cdf"), MimeRecord { mime: Mime::from_str("application/x-netcdf").unwrap(), compressible: false });
-        x.insert(Ascii::new("cdkey"), MimeRecord { mime: Mime::from_str("application/vnd.mediastation.cdkey").unwrap(), compressible: false });
-        x.insert(Ascii::new("cdmia"), MimeRecord { mime: Mime::from_str("application/cdmi-capability").unwrap(), compressible: false });
-        x.insert(Ascii::new("cdmic"), MimeRecord { mime: Mime::from_str("application/cdmi-container").unwrap(), compressible: false });
-        x.insert(Ascii::new("cdmid"), MimeRecord { mime: Mime::from_str("application/cdmi-domain").unwrap(), compressible: false });
-        x.insert(Ascii::new("cdmio"), MimeRecord { mime: Mime::from_str("application/cdmi-object").unwrap(), compressible: false });
-        x.insert(Ascii::new("cdmiq"), MimeRecord { mime: Mime::from_str("application/cdmi-queue").unwrap(), compressible: false });
-        x.insert(Ascii::new("cdx"), MimeRecord { mime: Mime::from_str("chemical/x-cdx").unwrap(), compressible: false });
-        x.insert(Ascii::new("cdxml"), MimeRecord { mime: Mime::from_str("application/vnd.chemdraw+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("cdy"), MimeRecord { mime: Mime::from_str("application/vnd.cinderella").unwrap(), compressible: false });
-        x.insert(Ascii::new("cer"), MimeRecord { mime: Mime::from_str("application/pkix-cert").unwrap(), compressible: false });
-        x.insert(Ascii::new("cfs"), MimeRecord { mime: Mime::from_str("application/x-cfs-compressed").unwrap(), compressible: false });
-        x.insert(Ascii::new("cgm"), MimeRecord { mime: Mime::from_str("image/cgm").unwrap(), compressible: false });
-        x.insert(Ascii::new("chat"), MimeRecord { mime: Mime::from_str("application/x-chat").unwrap(), compressible: false });
-        x.insert(Ascii::new("chm"), MimeRecord { mime: Mime::from_str("application/vnd.ms-htmlhelp").unwrap(), compressible: false });
-        x.insert(Ascii::new("chrt"), MimeRecord { mime: Mime::from_str("application/vnd.kde.kchart").unwrap(), compressible: false });
-        x.insert(Ascii::new("cif"), MimeRecord { mime: Mime::from_str("chemical/x-cif").unwrap(), compressible: false });
-        x.insert(Ascii::new("cii"), MimeRecord { mime: Mime::from_str("application/vnd.anser-web-certificate-issue-initiation").unwrap(), compressible: false });
-        x.insert(Ascii::new("cil"), MimeRecord { mime: Mime::from_str("application/vnd.ms-artgalry").unwrap(), compressible: false });
-        x.insert(Ascii::new("cla"), MimeRecord { mime: Mime::from_str("application/vnd.claymore").unwrap(), compressible: false });
-        x.insert(Ascii::new("class"), MimeRecord { mime: Mime::from_str("application/java-vm").unwrap(), compressible: false });
-        x.insert(Ascii::new("clkk"), MimeRecord { mime: Mime::from_str("application/vnd.crick.clicker.keyboard").unwrap(), compressible: false });
-        x.insert(Ascii::new("clkp"), MimeRecord { mime: Mime::from_str("application/vnd.crick.clicker.palette").unwrap(), compressible: false });
-        x.insert(Ascii::new("clkt"), MimeRecord { mime: Mime::from_str("application/vnd.crick.clicker.template").unwrap(), compressible: false });
-        x.insert(Ascii::new("clkw"), MimeRecord { mime: Mime::from_str("application/vnd.crick.clicker.wordbank").unwrap(), compressible: false });
-        x.insert(Ascii::new("clkx"), MimeRecord { mime: Mime::from_str("application/vnd.crick.clicker").unwrap(), compressible: false });
-        x.insert(Ascii::new("clp"), MimeRecord { mime: Mime::from_str("application/x-msclip").unwrap(), compressible: false });
-        x.insert(Ascii::new("cmc"), MimeRecord { mime: Mime::from_str("application/vnd.cosmocaller").unwrap(), compressible: false });
-        x.insert(Ascii::new("cmdf"), MimeRecord { mime: Mime::from_str("chemical/x-cmdf").unwrap(), compressible: false });
-        x.insert(Ascii::new("cml"), MimeRecord { mime: Mime::from_str("chemical/x-cml").unwrap(), compressible: false });
-        x.insert(Ascii::new("cmp"), MimeRecord { mime: Mime::from_str("application/vnd.yellowriver-custom-menu").unwrap(), compressible: false });
-        x.insert(Ascii::new("cmx"), MimeRecord { mime: Mime::from_str("image/x-cmx").unwrap(), compressible: false });
-        x.insert(Ascii::new("cod"), MimeRecord { mime: Mime::from_str("application/vnd.rim.cod").unwrap(), compressible: false });
-        x.insert(Ascii::new("coffee"), MimeRecord { mime: Mime::from_str("text/coffeescript").unwrap(), compressible: false });
-        x.insert(Ascii::new("com"), MimeRecord { mime: Mime::from_str("application/x-msdownload").unwrap(), compressible: false });
-        x.insert(Ascii::new("conf"), MimeRecord { mime: Mime::from_str("text/plain").unwrap(), compressible: true });
-        x.insert(Ascii::new("cpio"), MimeRecord { mime: Mime::from_str("application/x-cpio").unwrap(), compressible: false });
-        x.insert(Ascii::new("cpp"), MimeRecord { mime: Mime::from_str("text/x-c").unwrap(), compressible: false });
-        x.insert(Ascii::new("cpt"), MimeRecord { mime: Mime::from_str("application/mac-compactpro").unwrap(), compressible: false });
-        x.insert(Ascii::new("crd"), MimeRecord { mime: Mime::from_str("application/x-mscardfile").unwrap(), compressible: false });
-        x.insert(Ascii::new("crl"), MimeRecord { mime: Mime::from_str("application/pkix-crl").unwrap(), compressible: false });
-        x.insert(Ascii::new("crt"), MimeRecord { mime: Mime::from_str("application/x-x509-ca-cert").unwrap(), compressible: false });
-        x.insert(Ascii::new("crx"), MimeRecord { mime: Mime::from_str("application/x-chrome-extension").unwrap(), compressible: false });
-        x.insert(Ascii::new("cryptonote"), MimeRecord { mime: Mime::from_str("application/vnd.rig.cryptonote").unwrap(), compressible: false });
-        x.insert(Ascii::new("csh"), MimeRecord { mime: Mime::from_str("application/x-csh").unwrap(), compressible: false });
-        x.insert(Ascii::new("csml"), MimeRecord { mime: Mime::from_str("chemical/x-csml").unwrap(), compressible: false });
-        x.insert(Ascii::new("csp"), MimeRecord { mime: Mime::from_str("application/vnd.commonspace").unwrap(), compressible: false });
-        x.insert(Ascii::new("css"), MimeRecord { mime: Mime::from_str("text/css; charset=utf-8").unwrap(), compressible: true });
-        x.insert(Ascii::new("cst"), MimeRecord { mime: Mime::from_str("application/x-director").unwrap(), compressible: false });
-        x.insert(Ascii::new("csv"), MimeRecord { mime: Mime::from_str("text/csv").unwrap(), compressible: true });
-        x.insert(Ascii::new("cu"), MimeRecord { mime: Mime::from_str("application/cu-seeme").unwrap(), compressible: false });
-        x.insert(Ascii::new("curl"), MimeRecord { mime: Mime::from_str("text/vnd.curl").unwrap(), compressible: false });
-        x.insert(Ascii::new("cww"), MimeRecord { mime: Mime::from_str("application/prs.cww").unwrap(), compressible: false });
-        x.insert(Ascii::new("cxt"), MimeRecord { mime: Mime::from_str("application/x-director").unwrap(), compressible: false });
-        x.insert(Ascii::new("cxx"), MimeRecord { mime: Mime::from_str("text/x-c").unwrap(), compressible: false });
-        x.insert(Ascii::new("dae"), MimeRecord { mime: Mime::from_str("model/vnd.collada+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("daf"), MimeRecord { mime: Mime::from_str("application/vnd.mobius.daf").unwrap(), compressible: false });
-        x.insert(Ascii::new("dart"), MimeRecord { mime: Mime::from_str("application/vnd.dart").unwrap(), compressible: true });
-        x.insert(Ascii::new("dataless"), MimeRecord { mime: Mime::from_str("application/vnd.fdsn.seed").unwrap(), compressible: false });
-        x.insert(Ascii::new("davmount"), MimeRecord { mime: Mime::from_str("application/davmount+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("dbk"), MimeRecord { mime: Mime::from_str("application/docbook+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("dcr"), MimeRecord { mime: Mime::from_str("application/x-director").unwrap(), compressible: false });
-        x.insert(Ascii::new("dcurl"), MimeRecord { mime: Mime::from_str("text/vnd.curl.dcurl").unwrap(), compressible: false });
-        x.insert(Ascii::new("dd2"), MimeRecord { mime: Mime::from_str("application/vnd.oma.dd2+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("ddd"), MimeRecord { mime: Mime::from_str("application/vnd.fujixerox.ddd").unwrap(), compressible: false });
-        x.insert(Ascii::new("deb"), MimeRecord { mime: Mime::from_str("application/x-debian-package").unwrap(), compressible: false });
-        x.insert(Ascii::new("def"), MimeRecord { mime: Mime::from_str("text/plain").unwrap(), compressible: true });
-        x.insert(Ascii::new("deploy"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("der"), MimeRecord { mime: Mime::from_str("application/x-x509-ca-cert").unwrap(), compressible: false });
-        x.insert(Ascii::new("dfac"), MimeRecord { mime: Mime::from_str("application/vnd.dreamfactory").unwrap(), compressible: false });
-        x.insert(Ascii::new("dgc"), MimeRecord { mime: Mime::from_str("application/x-dgc-compressed").unwrap(), compressible: false });
-        x.insert(Ascii::new("dic"), MimeRecord { mime: Mime::from_str("text/x-c").unwrap(), compressible: false });
-        x.insert(Ascii::new("dir"), MimeRecord { mime: Mime::from_str("application/x-director").unwrap(), compressible: false });
-        x.insert(Ascii::new("dis"), MimeRecord { mime: Mime::from_str("application/vnd.mobius.dis").unwrap(), compressible: false });
-        x.insert(Ascii::new("dist"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("distz"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("djv"), MimeRecord { mime: Mime::from_str("image/vnd.djvu").unwrap(), compressible: false });
-        x.insert(Ascii::new("djvu"), MimeRecord { mime: Mime::from_str("image/vnd.djvu").unwrap(), compressible: false });
-        x.insert(Ascii::new("dll"), MimeRecord { mime: Mime::from_str("application/x-msdownload").unwrap(), compressible: false });
-        x.insert(Ascii::new("dmg"), MimeRecord { mime: Mime::from_str("application/x-apple-diskimage").unwrap(), compressible: false });
-        x.insert(Ascii::new("dmp"), MimeRecord { mime: Mime::from_str("application/vnd.tcpdump.pcap").unwrap(), compressible: false });
-        x.insert(Ascii::new("dms"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("dna"), MimeRecord { mime: Mime::from_str("application/vnd.dna").unwrap(), compressible: false });
-        x.insert(Ascii::new("doc"), MimeRecord { mime: Mime::from_str("application/msword").unwrap(), compressible: false });
-        x.insert(Ascii::new("docm"), MimeRecord { mime: Mime::from_str("application/vnd.ms-word.document.macroenabled.12").unwrap(), compressible: false });
-        x.insert(Ascii::new("docx"), MimeRecord { mime: Mime::from_str("application/vnd.openxmlformats-officedocument.wordprocessingml.document").unwrap(), compressible: false });
-        x.insert(Ascii::new("dot"), MimeRecord { mime: Mime::from_str("application/msword").unwrap(), compressible: false });
-        x.insert(Ascii::new("dotm"), MimeRecord { mime: Mime::from_str("application/vnd.ms-word.template.macroenabled.12").unwrap(), compressible: false });
-        x.insert(Ascii::new("dotx"), MimeRecord { mime: Mime::from_str("application/vnd.openxmlformats-officedocument.wordprocessingml.template").unwrap(), compressible: false });
-        x.insert(Ascii::new("dp"), MimeRecord { mime: Mime::from_str("application/vnd.osgi.dp").unwrap(), compressible: false });
-        x.insert(Ascii::new("dpg"), MimeRecord { mime: Mime::from_str("application/vnd.dpgraph").unwrap(), compressible: false });
-        x.insert(Ascii::new("dra"), MimeRecord { mime: Mime::from_str("audio/vnd.dra").unwrap(), compressible: false });
-        x.insert(Ascii::new("dsc"), MimeRecord { mime: Mime::from_str("text/prs.lines.tag").unwrap(), compressible: false });
-        x.insert(Ascii::new("dssc"), MimeRecord { mime: Mime::from_str("application/dssc+der").unwrap(), compressible: false });
-        x.insert(Ascii::new("dtb"), MimeRecord { mime: Mime::from_str("application/x-dtbook+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("dtd"), MimeRecord { mime: Mime::from_str("application/xml-dtd").unwrap(), compressible: true });
-        x.insert(Ascii::new("dts"), MimeRecord { mime: Mime::from_str("audio/vnd.dts").unwrap(), compressible: false });
-        x.insert(Ascii::new("dtshd"), MimeRecord { mime: Mime::from_str("audio/vnd.dts.hd").unwrap(), compressible: false });
-        x.insert(Ascii::new("dump"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("dvb"), MimeRecord { mime: Mime::from_str("video/vnd.dvb.file").unwrap(), compressible: false });
-        x.insert(Ascii::new("dvi"), MimeRecord { mime: Mime::from_str("application/x-dvi").unwrap(), compressible: false });
-        x.insert(Ascii::new("dwf"), MimeRecord { mime: Mime::from_str("model/vnd.dwf").unwrap(), compressible: false });
-        x.insert(Ascii::new("dwg"), MimeRecord { mime: Mime::from_str("image/vnd.dwg").unwrap(), compressible: false });
-        x.insert(Ascii::new("dxf"), MimeRecord { mime: Mime::from_str("image/vnd.dxf").unwrap(), compressible: false });
-        x.insert(Ascii::new("dxp"), MimeRecord { mime: Mime::from_str("application/vnd.spotfire.dxp").unwrap(), compressible: false });
-        x.insert(Ascii::new("dxr"), MimeRecord { mime: Mime::from_str("application/x-director").unwrap(), compressible: false });
-        x.insert(Ascii::new("ear"), MimeRecord { mime: Mime::from_str("application/java-archive").unwrap(), compressible: false });
-        x.insert(Ascii::new("ecelp4800"), MimeRecord { mime: Mime::from_str("audio/vnd.nuera.ecelp4800").unwrap(), compressible: false });
-        x.insert(Ascii::new("ecelp7470"), MimeRecord { mime: Mime::from_str("audio/vnd.nuera.ecelp7470").unwrap(), compressible: false });
-        x.insert(Ascii::new("ecelp9600"), MimeRecord { mime: Mime::from_str("audio/vnd.nuera.ecelp9600").unwrap(), compressible: false });
-        x.insert(Ascii::new("ecma"), MimeRecord { mime: Mime::from_str("application/ecmascript").unwrap(), compressible: true });
-        x.insert(Ascii::new("edm"), MimeRecord { mime: Mime::from_str("application/vnd.novadigm.edm").unwrap(), compressible: false });
-        x.insert(Ascii::new("edx"), MimeRecord { mime: Mime::from_str("application/vnd.novadigm.edx").unwrap(), compressible: false });
-        x.insert(Ascii::new("efif"), MimeRecord { mime: Mime::from_str("application/vnd.picsel").unwrap(), compressible: false });
-        x.insert(Ascii::new("ei6"), MimeRecord { mime: Mime::from_str("application/vnd.pg.osasli").unwrap(), compressible: false });
-        x.insert(Ascii::new("elc"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("emf"), MimeRecord { mime: Mime::from_str("application/x-msmetafile").unwrap(), compressible: false });
-        x.insert(Ascii::new("eml"), MimeRecord { mime: Mime::from_str("message/rfc822").unwrap(), compressible: true });
-        x.insert(Ascii::new("emma"), MimeRecord { mime: Mime::from_str("application/emma+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("emz"), MimeRecord { mime: Mime::from_str("application/x-msmetafile").unwrap(), compressible: false });
-        x.insert(Ascii::new("eol"), MimeRecord { mime: Mime::from_str("audio/vnd.digital-winds").unwrap(), compressible: false });
-        x.insert(Ascii::new("eot"), MimeRecord { mime: Mime::from_str("application/vnd.ms-fontobject").unwrap(), compressible: true });
-        x.insert(Ascii::new("eps"), MimeRecord { mime: Mime::from_str("application/postscript").unwrap(), compressible: true });
-        x.insert(Ascii::new("epub"), MimeRecord { mime: Mime::from_str("application/epub+zip").unwrap(), compressible: false });
-        x.insert(Ascii::new("es3"), MimeRecord { mime: Mime::from_str("application/vnd.eszigno3+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("esa"), MimeRecord { mime: Mime::from_str("application/vnd.osgi.subsystem").unwrap(), compressible: false });
-        x.insert(Ascii::new("esf"), MimeRecord { mime: Mime::from_str("application/vnd.epson.esf").unwrap(), compressible: false });
-        x.insert(Ascii::new("et3"), MimeRecord { mime: Mime::from_str("application/vnd.eszigno3+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("etx"), MimeRecord { mime: Mime::from_str("text/x-setext").unwrap(), compressible: false });
-        x.insert(Ascii::new("eva"), MimeRecord { mime: Mime::from_str("application/x-eva").unwrap(), compressible: false });
-        x.insert(Ascii::new("evy"), MimeRecord { mime: Mime::from_str("application/x-envoy").unwrap(), compressible: false });
-        x.insert(Ascii::new("exe"), MimeRecord { mime: Mime::from_str("application/x-msdos-program").unwrap(), compressible: false });
-        x.insert(Ascii::new("exi"), MimeRecord { mime: Mime::from_str("application/exi").unwrap(), compressible: false });
-        x.insert(Ascii::new("ext"), MimeRecord { mime: Mime::from_str("application/vnd.novadigm.ext").unwrap(), compressible: false });
-        x.insert(Ascii::new("ez"), MimeRecord { mime: Mime::from_str("application/andrew-inset").unwrap(), compressible: false });
-        x.insert(Ascii::new("ez2"), MimeRecord { mime: Mime::from_str("application/vnd.ezpix-album").unwrap(), compressible: false });
-        x.insert(Ascii::new("ez3"), MimeRecord { mime: Mime::from_str("application/vnd.ezpix-package").unwrap(), compressible: false });
-        x.insert(Ascii::new("f"), MimeRecord { mime: Mime::from_str("text/x-fortran").unwrap(), compressible: false });
-        x.insert(Ascii::new("f4v"), MimeRecord { mime: Mime::from_str("video/x-f4v").unwrap(), compressible: false });
-        x.insert(Ascii::new("f77"), MimeRecord { mime: Mime::from_str("text/x-fortran").unwrap(), compressible: false });
-        x.insert(Ascii::new("f90"), MimeRecord { mime: Mime::from_str("text/x-fortran").unwrap(), compressible: false });
-        x.insert(Ascii::new("fbs"), MimeRecord { mime: Mime::from_str("image/vnd.fastbidsheet").unwrap(), compressible: false });
-        x.insert(Ascii::new("fcdt"), MimeRecord { mime: Mime::from_str("application/vnd.adobe.formscentral.fcdt").unwrap(), compressible: false });
-        x.insert(Ascii::new("fcs"), MimeRecord { mime: Mime::from_str("application/vnd.isac.fcs").unwrap(), compressible: false });
-        x.insert(Ascii::new("fdf"), MimeRecord { mime: Mime::from_str("application/vnd.fdf").unwrap(), compressible: false });
-        x.insert(Ascii::new("fe_launch"), MimeRecord { mime: Mime::from_str("application/vnd.denovo.fcselayout-link").unwrap(), compressible: false });
-        x.insert(Ascii::new("fg5"), MimeRecord { mime: Mime::from_str("application/vnd.fujitsu.oasysgp").unwrap(), compressible: false });
-        x.insert(Ascii::new("fgd"), MimeRecord { mime: Mime::from_str("application/x-director").unwrap(), compressible: false });
-        x.insert(Ascii::new("fh"), MimeRecord { mime: Mime::from_str("image/x-freehand").unwrap(), compressible: false });
-        x.insert(Ascii::new("fh4"), MimeRecord { mime: Mime::from_str("image/x-freehand").unwrap(), compressible: false });
-        x.insert(Ascii::new("fh5"), MimeRecord { mime: Mime::from_str("image/x-freehand").unwrap(), compressible: false });
-        x.insert(Ascii::new("fh7"), MimeRecord { mime: Mime::from_str("image/x-freehand").unwrap(), compressible: false });
-        x.insert(Ascii::new("fhc"), MimeRecord { mime: Mime::from_str("image/x-freehand").unwrap(), compressible: false });
-        x.insert(Ascii::new("fig"), MimeRecord { mime: Mime::from_str("application/x-xfig").unwrap(), compressible: false });
-        x.insert(Ascii::new("flac"), MimeRecord { mime: Mime::from_str("audio/x-flac").unwrap(), compressible: false });
-        x.insert(Ascii::new("fli"), MimeRecord { mime: Mime::from_str("video/x-fli").unwrap(), compressible: false });
-        x.insert(Ascii::new("flo"), MimeRecord { mime: Mime::from_str("application/vnd.micrografx.flo").unwrap(), compressible: false });
-        x.insert(Ascii::new("flv"), MimeRecord { mime: Mime::from_str("video/x-flv").unwrap(), compressible: false });
-        x.insert(Ascii::new("flw"), MimeRecord { mime: Mime::from_str("application/vnd.kde.kivio").unwrap(), compressible: false });
-        x.insert(Ascii::new("flx"), MimeRecord { mime: Mime::from_str("text/vnd.fmi.flexstor").unwrap(), compressible: false });
-        x.insert(Ascii::new("fly"), MimeRecord { mime: Mime::from_str("text/vnd.fly").unwrap(), compressible: false });
-        x.insert(Ascii::new("fm"), MimeRecord { mime: Mime::from_str("application/vnd.framemaker").unwrap(), compressible: false });
-        x.insert(Ascii::new("fnc"), MimeRecord { mime: Mime::from_str("application/vnd.frogans.fnc").unwrap(), compressible: false });
-        x.insert(Ascii::new("for"), MimeRecord { mime: Mime::from_str("text/x-fortran").unwrap(), compressible: false });
-        x.insert(Ascii::new("fpx"), MimeRecord { mime: Mime::from_str("image/vnd.fpx").unwrap(), compressible: false });
-        x.insert(Ascii::new("frame"), MimeRecord { mime: Mime::from_str("application/vnd.framemaker").unwrap(), compressible: false });
-        x.insert(Ascii::new("fsc"), MimeRecord { mime: Mime::from_str("application/vnd.fsc.weblaunch").unwrap(), compressible: false });
-        x.insert(Ascii::new("fst"), MimeRecord { mime: Mime::from_str("image/vnd.fst").unwrap(), compressible: false });
-        x.insert(Ascii::new("ftc"), MimeRecord { mime: Mime::from_str("application/vnd.fluxtime.clip").unwrap(), compressible: false });
-        x.insert(Ascii::new("fti"), MimeRecord { mime: Mime::from_str("application/vnd.anser-web-funds-transfer-initiation").unwrap(), compressible: false });
-        x.insert(Ascii::new("fvt"), MimeRecord { mime: Mime::from_str("video/vnd.fvt").unwrap(), compressible: false });
-        x.insert(Ascii::new("fxp"), MimeRecord { mime: Mime::from_str("application/vnd.adobe.fxp").unwrap(), compressible: false });
-        x.insert(Ascii::new("fxpl"), MimeRecord { mime: Mime::from_str("application/vnd.adobe.fxp").unwrap(), compressible: false });
-        x.insert(Ascii::new("fzs"), MimeRecord { mime: Mime::from_str("application/vnd.fuzzysheet").unwrap(), compressible: false });
-        x.insert(Ascii::new("g2w"), MimeRecord { mime: Mime::from_str("application/vnd.geoplan").unwrap(), compressible: false });
-        x.insert(Ascii::new("g3"), MimeRecord { mime: Mime::from_str("image/g3fax").unwrap(), compressible: false });
-        x.insert(Ascii::new("g3w"), MimeRecord { mime: Mime::from_str("application/vnd.geospace").unwrap(), compressible: false });
-        x.insert(Ascii::new("gac"), MimeRecord { mime: Mime::from_str("application/vnd.groove-account").unwrap(), compressible: false });
-        x.insert(Ascii::new("gam"), MimeRecord { mime: Mime::from_str("application/x-tads").unwrap(), compressible: false });
-        x.insert(Ascii::new("gbr"), MimeRecord { mime: Mime::from_str("application/rpki-ghostbusters").unwrap(), compressible: false });
-        x.insert(Ascii::new("gca"), MimeRecord { mime: Mime::from_str("application/x-gca-compressed").unwrap(), compressible: false });
-        x.insert(Ascii::new("gdl"), MimeRecord { mime: Mime::from_str("model/vnd.gdl").unwrap(), compressible: false });
-        x.insert(Ascii::new("gdoc"), MimeRecord { mime: Mime::from_str("application/vnd.google-apps.document").unwrap(), compressible: false });
-        x.insert(Ascii::new("geo"), MimeRecord { mime: Mime::from_str("application/vnd.dynageo").unwrap(), compressible: false });
-        x.insert(Ascii::new("geojson"), MimeRecord { mime: Mime::from_str("application/geo+json").unwrap(), compressible: true });
-        x.insert(Ascii::new("gex"), MimeRecord { mime: Mime::from_str("application/vnd.geometry-explorer").unwrap(), compressible: false });
-        x.insert(Ascii::new("ggb"), MimeRecord { mime: Mime::from_str("application/vnd.geogebra.file").unwrap(), compressible: false });
-        x.insert(Ascii::new("ggt"), MimeRecord { mime: Mime::from_str("application/vnd.geogebra.tool").unwrap(), compressible: false });
-        x.insert(Ascii::new("ghf"), MimeRecord { mime: Mime::from_str("application/vnd.groove-help").unwrap(), compressible: false });
-        x.insert(Ascii::new("gif"), MimeRecord { mime: Mime::from_str("image/gif").unwrap(), compressible: false });
-        x.insert(Ascii::new("gim"), MimeRecord { mime: Mime::from_str("application/vnd.groove-identity-message").unwrap(), compressible: false });
-        x.insert(Ascii::new("glb"), MimeRecord { mime: Mime::from_str("model/gltf-binary").unwrap(), compressible: true });
-        x.insert(Ascii::new("gltf"), MimeRecord { mime: Mime::from_str("model/gltf+json").unwrap(), compressible: true });
-        x.insert(Ascii::new("gml"), MimeRecord { mime: Mime::from_str("application/gml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("gmx"), MimeRecord { mime: Mime::from_str("application/vnd.gmx").unwrap(), compressible: false });
-        x.insert(Ascii::new("gnumeric"), MimeRecord { mime: Mime::from_str("application/x-gnumeric").unwrap(), compressible: false });
-        x.insert(Ascii::new("gph"), MimeRecord { mime: Mime::from_str("application/vnd.flographit").unwrap(), compressible: false });
-        x.insert(Ascii::new("gpx"), MimeRecord { mime: Mime::from_str("application/gpx+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("gqf"), MimeRecord { mime: Mime::from_str("application/vnd.grafeq").unwrap(), compressible: false });
-        x.insert(Ascii::new("gqs"), MimeRecord { mime: Mime::from_str("application/vnd.grafeq").unwrap(), compressible: false });
-        x.insert(Ascii::new("gram"), MimeRecord { mime: Mime::from_str("application/srgs").unwrap(), compressible: false });
-        x.insert(Ascii::new("gramps"), MimeRecord { mime: Mime::from_str("application/x-gramps-xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("gre"), MimeRecord { mime: Mime::from_str("application/vnd.geometry-explorer").unwrap(), compressible: false });
-        x.insert(Ascii::new("grv"), MimeRecord { mime: Mime::from_str("application/vnd.groove-injector").unwrap(), compressible: false });
-        x.insert(Ascii::new("grxml"), MimeRecord { mime: Mime::from_str("application/srgs+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("gsf"), MimeRecord { mime: Mime::from_str("application/x-font-ghostscript").unwrap(), compressible: false });
-        x.insert(Ascii::new("gsheet"), MimeRecord { mime: Mime::from_str("application/vnd.google-apps.spreadsheet").unwrap(), compressible: false });
-        x.insert(Ascii::new("gslides"), MimeRecord { mime: Mime::from_str("application/vnd.google-apps.presentation").unwrap(), compressible: false });
-        x.insert(Ascii::new("gtar"), MimeRecord { mime: Mime::from_str("application/x-gtar").unwrap(), compressible: false });
-        x.insert(Ascii::new("gtm"), MimeRecord { mime: Mime::from_str("application/vnd.groove-tool-message").unwrap(), compressible: false });
-        x.insert(Ascii::new("gtw"), MimeRecord { mime: Mime::from_str("model/vnd.gtw").unwrap(), compressible: false });
-        x.insert(Ascii::new("gv"), MimeRecord { mime: Mime::from_str("text/vnd.graphviz").unwrap(), compressible: false });
-        x.insert(Ascii::new("gxf"), MimeRecord { mime: Mime::from_str("application/gxf").unwrap(), compressible: false });
-        x.insert(Ascii::new("gxt"), MimeRecord { mime: Mime::from_str("application/vnd.geonext").unwrap(), compressible: false });
-        x.insert(Ascii::new("gz"), MimeRecord { mime: Mime::from_str("application/gzip").unwrap(), compressible: false });
-        x.insert(Ascii::new("h"), MimeRecord { mime: Mime::from_str("text/x-c").unwrap(), compressible: false });
-        x.insert(Ascii::new("h261"), MimeRecord { mime: Mime::from_str("video/h261").unwrap(), compressible: false });
-        x.insert(Ascii::new("h263"), MimeRecord { mime: Mime::from_str("video/h263").unwrap(), compressible: false });
-        x.insert(Ascii::new("h264"), MimeRecord { mime: Mime::from_str("video/h264").unwrap(), compressible: false });
-        x.insert(Ascii::new("hal"), MimeRecord { mime: Mime::from_str("application/vnd.hal+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("hbci"), MimeRecord { mime: Mime::from_str("application/vnd.hbci").unwrap(), compressible: false });
-        x.insert(Ascii::new("hbs"), MimeRecord { mime: Mime::from_str("text/x-handlebars-template").unwrap(), compressible: false });
-        x.insert(Ascii::new("hdd"), MimeRecord { mime: Mime::from_str("application/x-virtualbox-hdd").unwrap(), compressible: true });
-        x.insert(Ascii::new("hdf"), MimeRecord { mime: Mime::from_str("application/x-hdf").unwrap(), compressible: false });
-        x.insert(Ascii::new("hh"), MimeRecord { mime: Mime::from_str("text/x-c").unwrap(), compressible: false });
-        x.insert(Ascii::new("hjson"), MimeRecord { mime: Mime::from_str("application/hjson").unwrap(), compressible: false });
-        x.insert(Ascii::new("hlp"), MimeRecord { mime: Mime::from_str("application/winhlp").unwrap(), compressible: false });
-        x.insert(Ascii::new("hpgl"), MimeRecord { mime: Mime::from_str("application/vnd.hp-hpgl").unwrap(), compressible: false });
-        x.insert(Ascii::new("hpid"), MimeRecord { mime: Mime::from_str("application/vnd.hp-hpid").unwrap(), compressible: false });
-        x.insert(Ascii::new("hps"), MimeRecord { mime: Mime::from_str("application/vnd.hp-hps").unwrap(), compressible: false });
-        x.insert(Ascii::new("hqx"), MimeRecord { mime: Mime::from_str("application/mac-binhex40").unwrap(), compressible: false });
-        x.insert(Ascii::new("htc"), MimeRecord { mime: Mime::from_str("text/x-component").unwrap(), compressible: false });
-        x.insert(Ascii::new("htke"), MimeRecord { mime: Mime::from_str("application/vnd.kenameaapp").unwrap(), compressible: false });
-        x.insert(Ascii::new("htm"), MimeRecord { mime: Mime::from_str("text/html").unwrap(), compressible: true });
-        x.insert(Ascii::new("html"), MimeRecord { mime: Mime::from_str("text/html").unwrap(), compressible: true });
-        x.insert(Ascii::new("hvd"), MimeRecord { mime: Mime::from_str("application/vnd.yamaha.hv-dic").unwrap(), compressible: false });
-        x.insert(Ascii::new("hvp"), MimeRecord { mime: Mime::from_str("application/vnd.yamaha.hv-voice").unwrap(), compressible: false });
-        x.insert(Ascii::new("hvs"), MimeRecord { mime: Mime::from_str("application/vnd.yamaha.hv-script").unwrap(), compressible: false });
-        x.insert(Ascii::new("i2g"), MimeRecord { mime: Mime::from_str("application/vnd.intergeo").unwrap(), compressible: false });
-        x.insert(Ascii::new("icc"), MimeRecord { mime: Mime::from_str("application/vnd.iccprofile").unwrap(), compressible: false });
-        x.insert(Ascii::new("ice"), MimeRecord { mime: Mime::from_str("x-conference/x-cooltalk").unwrap(), compressible: false });
-        x.insert(Ascii::new("icm"), MimeRecord { mime: Mime::from_str("application/vnd.iccprofile").unwrap(), compressible: false });
-        x.insert(Ascii::new("ico"), MimeRecord { mime: Mime::from_str("image/x-icon").unwrap(), compressible: true });
-        x.insert(Ascii::new("ics"), MimeRecord { mime: Mime::from_str("text/calendar").unwrap(), compressible: false });
-        x.insert(Ascii::new("ief"), MimeRecord { mime: Mime::from_str("image/ief").unwrap(), compressible: false });
-        x.insert(Ascii::new("ifb"), MimeRecord { mime: Mime::from_str("text/calendar").unwrap(), compressible: false });
-        x.insert(Ascii::new("ifm"), MimeRecord { mime: Mime::from_str("application/vnd.shana.informed.formdata").unwrap(), compressible: false });
-        x.insert(Ascii::new("iges"), MimeRecord { mime: Mime::from_str("model/iges").unwrap(), compressible: false });
-        x.insert(Ascii::new("igl"), MimeRecord { mime: Mime::from_str("application/vnd.igloader").unwrap(), compressible: false });
-        x.insert(Ascii::new("igm"), MimeRecord { mime: Mime::from_str("application/vnd.insors.igm").unwrap(), compressible: false });
-        x.insert(Ascii::new("igs"), MimeRecord { mime: Mime::from_str("model/iges").unwrap(), compressible: false });
-        x.insert(Ascii::new("igx"), MimeRecord { mime: Mime::from_str("application/vnd.micrografx.igx").unwrap(), compressible: false });
-        x.insert(Ascii::new("iif"), MimeRecord { mime: Mime::from_str("application/vnd.shana.informed.interchange").unwrap(), compressible: false });
-        x.insert(Ascii::new("img"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("imp"), MimeRecord { mime: Mime::from_str("application/vnd.accpac.simply.imp").unwrap(), compressible: false });
-        x.insert(Ascii::new("ims"), MimeRecord { mime: Mime::from_str("application/vnd.ms-ims").unwrap(), compressible: false });
-        x.insert(Ascii::new("in"), MimeRecord { mime: Mime::from_str("text/plain").unwrap(), compressible: true });
-        x.insert(Ascii::new("ini"), MimeRecord { mime: Mime::from_str("text/plain").unwrap(), compressible: true });
-        x.insert(Ascii::new("ink"), MimeRecord { mime: Mime::from_str("application/inkml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("inkml"), MimeRecord { mime: Mime::from_str("application/inkml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("install"), MimeRecord { mime: Mime::from_str("application/x-install-instructions").unwrap(), compressible: false });
-        x.insert(Ascii::new("iota"), MimeRecord { mime: Mime::from_str("application/vnd.astraea-software.iota").unwrap(), compressible: false });
-        x.insert(Ascii::new("ipfix"), MimeRecord { mime: Mime::from_str("application/ipfix").unwrap(), compressible: false });
-        x.insert(Ascii::new("ipk"), MimeRecord { mime: Mime::from_str("application/vnd.shana.informed.package").unwrap(), compressible: false });
-        x.insert(Ascii::new("irm"), MimeRecord { mime: Mime::from_str("application/vnd.ibm.rights-management").unwrap(), compressible: false });
-        x.insert(Ascii::new("irp"), MimeRecord { mime: Mime::from_str("application/vnd.irepository.package+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("iso"), MimeRecord { mime: Mime::from_str("application/x-iso9660-image").unwrap(), compressible: false });
-        x.insert(Ascii::new("itp"), MimeRecord { mime: Mime::from_str("application/vnd.shana.informed.formtemplate").unwrap(), compressible: false });
-        x.insert(Ascii::new("ivp"), MimeRecord { mime: Mime::from_str("application/vnd.immervision-ivp").unwrap(), compressible: false });
-        x.insert(Ascii::new("ivu"), MimeRecord { mime: Mime::from_str("application/vnd.immervision-ivu").unwrap(), compressible: false });
-        x.insert(Ascii::new("jad"), MimeRecord { mime: Mime::from_str("text/vnd.sun.j2me.app-descriptor").unwrap(), compressible: false });
-        x.insert(Ascii::new("jade"), MimeRecord { mime: Mime::from_str("text/jade").unwrap(), compressible: false });
-        x.insert(Ascii::new("jam"), MimeRecord { mime: Mime::from_str("application/vnd.jam").unwrap(), compressible: false });
-        x.insert(Ascii::new("jar"), MimeRecord { mime: Mime::from_str("application/java-archive").unwrap(), compressible: false });
-        x.insert(Ascii::new("jardiff"), MimeRecord { mime: Mime::from_str("application/x-java-archive-diff").unwrap(), compressible: false });
-        x.insert(Ascii::new("java"), MimeRecord { mime: Mime::from_str("text/x-java-source").unwrap(), compressible: false });
-        x.insert(Ascii::new("jisp"), MimeRecord { mime: Mime::from_str("application/vnd.jisp").unwrap(), compressible: false });
-        x.insert(Ascii::new("jlt"), MimeRecord { mime: Mime::from_str("application/vnd.hp-jlyt").unwrap(), compressible: false });
-        x.insert(Ascii::new("jng"), MimeRecord { mime: Mime::from_str("image/x-jng").unwrap(), compressible: false });
-        x.insert(Ascii::new("jnlp"), MimeRecord { mime: Mime::from_str("application/x-java-jnlp-file").unwrap(), compressible: false });
-        x.insert(Ascii::new("joda"), MimeRecord { mime: Mime::from_str("application/vnd.joost.joda-archive").unwrap(), compressible: false });
-        x.insert(Ascii::new("jp2"), MimeRecord { mime: Mime::from_str("image/jp2").unwrap(), compressible: false });
-        x.insert(Ascii::new("jpe"), MimeRecord { mime: Mime::from_str("image/jpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("jpeg"), MimeRecord { mime: Mime::from_str("image/jpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("jpf"), MimeRecord { mime: Mime::from_str("image/jpx").unwrap(), compressible: false });
-        x.insert(Ascii::new("jpg"), MimeRecord { mime: Mime::from_str("image/jpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("jpg2"), MimeRecord { mime: Mime::from_str("image/jp2").unwrap(), compressible: false });
-        x.insert(Ascii::new("jpgm"), MimeRecord { mime: Mime::from_str("video/jpm").unwrap(), compressible: false });
-        x.insert(Ascii::new("jpgv"), MimeRecord { mime: Mime::from_str("video/jpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("jpm"), MimeRecord { mime: Mime::from_str("image/jpm").unwrap(), compressible: false });
-        x.insert(Ascii::new("jpx"), MimeRecord { mime: Mime::from_str("image/jpx").unwrap(), compressible: false });
-        x.insert(Ascii::new("js"), MimeRecord { mime: Mime::from_str("application/javascript; charset=utf-8").unwrap(), compressible: true });
-        x.insert(Ascii::new("json"), MimeRecord { mime: Mime::from_str("application/json; charset=utf-8").unwrap(), compressible: true });
-        x.insert(Ascii::new("json5"), MimeRecord { mime: Mime::from_str("application/json5").unwrap(), compressible: false });
-        x.insert(Ascii::new("jsonld"), MimeRecord { mime: Mime::from_str("application/ld+json").unwrap(), compressible: true });
-        x.insert(Ascii::new("jsonml"), MimeRecord { mime: Mime::from_str("application/jsonml+json").unwrap(), compressible: true });
-        x.insert(Ascii::new("jsx"), MimeRecord { mime: Mime::from_str("text/jsx").unwrap(), compressible: true });
-        x.insert(Ascii::new("kar"), MimeRecord { mime: Mime::from_str("audio/midi").unwrap(), compressible: false });
-        x.insert(Ascii::new("karbon"), MimeRecord { mime: Mime::from_str("application/vnd.kde.karbon").unwrap(), compressible: false });
-        x.insert(Ascii::new("kfo"), MimeRecord { mime: Mime::from_str("application/vnd.kde.kformula").unwrap(), compressible: false });
-        x.insert(Ascii::new("kia"), MimeRecord { mime: Mime::from_str("application/vnd.kidspiration").unwrap(), compressible: false });
-        x.insert(Ascii::new("kml"), MimeRecord { mime: Mime::from_str("application/vnd.google-earth.kml+xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("kmz"), MimeRecord { mime: Mime::from_str("application/vnd.google-earth.kmz").unwrap(), compressible: false });
-        x.insert(Ascii::new("kne"), MimeRecord { mime: Mime::from_str("application/vnd.kinar").unwrap(), compressible: false });
-        x.insert(Ascii::new("knp"), MimeRecord { mime: Mime::from_str("application/vnd.kinar").unwrap(), compressible: false });
-        x.insert(Ascii::new("kon"), MimeRecord { mime: Mime::from_str("application/vnd.kde.kontour").unwrap(), compressible: false });
-        x.insert(Ascii::new("kpr"), MimeRecord { mime: Mime::from_str("application/vnd.kde.kpresenter").unwrap(), compressible: false });
-        x.insert(Ascii::new("kpt"), MimeRecord { mime: Mime::from_str("application/vnd.kde.kpresenter").unwrap(), compressible: false });
-        x.insert(Ascii::new("kpxx"), MimeRecord { mime: Mime::from_str("application/vnd.ds-keypoint").unwrap(), compressible: false });
-        x.insert(Ascii::new("ksp"), MimeRecord { mime: Mime::from_str("application/vnd.kde.kspread").unwrap(), compressible: false });
-        x.insert(Ascii::new("ktr"), MimeRecord { mime: Mime::from_str("application/vnd.kahootz").unwrap(), compressible: false });
-        x.insert(Ascii::new("ktx"), MimeRecord { mime: Mime::from_str("image/ktx").unwrap(), compressible: false });
-        x.insert(Ascii::new("ktz"), MimeRecord { mime: Mime::from_str("application/vnd.kahootz").unwrap(), compressible: false });
-        x.insert(Ascii::new("kwd"), MimeRecord { mime: Mime::from_str("application/vnd.kde.kword").unwrap(), compressible: false });
-        x.insert(Ascii::new("kwt"), MimeRecord { mime: Mime::from_str("application/vnd.kde.kword").unwrap(), compressible: false });
-        x.insert(Ascii::new("lasxml"), MimeRecord { mime: Mime::from_str("application/vnd.las.las+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("latex"), MimeRecord { mime: Mime::from_str("application/x-latex").unwrap(), compressible: false });
-        x.insert(Ascii::new("lbd"), MimeRecord { mime: Mime::from_str("application/vnd.llamagraphics.life-balance.desktop").unwrap(), compressible: false });
-        x.insert(Ascii::new("lbe"), MimeRecord { mime: Mime::from_str("application/vnd.llamagraphics.life-balance.exchange+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("les"), MimeRecord { mime: Mime::from_str("application/vnd.hhe.lesson-player").unwrap(), compressible: false });
-        x.insert(Ascii::new("less"), MimeRecord { mime: Mime::from_str("text/less").unwrap(), compressible: false });
-        x.insert(Ascii::new("lha"), MimeRecord { mime: Mime::from_str("application/x-lzh-compressed").unwrap(), compressible: false });
-        x.insert(Ascii::new("link66"), MimeRecord { mime: Mime::from_str("application/vnd.route66.link66+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("list"), MimeRecord { mime: Mime::from_str("text/plain").unwrap(), compressible: true });
-        x.insert(Ascii::new("list3820"), MimeRecord { mime: Mime::from_str("application/vnd.ibm.modcap").unwrap(), compressible: false });
-        x.insert(Ascii::new("listafp"), MimeRecord { mime: Mime::from_str("application/vnd.ibm.modcap").unwrap(), compressible: false });
-        x.insert(Ascii::new("litcoffee"), MimeRecord { mime: Mime::from_str("text/coffeescript").unwrap(), compressible: false });
-        x.insert(Ascii::new("lnk"), MimeRecord { mime: Mime::from_str("application/x-ms-shortcut").unwrap(), compressible: false });
-        x.insert(Ascii::new("log"), MimeRecord { mime: Mime::from_str("text/plain").unwrap(), compressible: true });
-        x.insert(Ascii::new("lostxml"), MimeRecord { mime: Mime::from_str("application/lost+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("lrf"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("lrm"), MimeRecord { mime: Mime::from_str("application/vnd.ms-lrm").unwrap(), compressible: false });
-        x.insert(Ascii::new("ltf"), MimeRecord { mime: Mime::from_str("application/vnd.frogans.ltf").unwrap(), compressible: false });
-        x.insert(Ascii::new("lua"), MimeRecord { mime: Mime::from_str("text/x-lua").unwrap(), compressible: false });
-        x.insert(Ascii::new("luac"), MimeRecord { mime: Mime::from_str("application/x-lua-bytecode").unwrap(), compressible: false });
-        x.insert(Ascii::new("lvp"), MimeRecord { mime: Mime::from_str("audio/vnd.lucent.voice").unwrap(), compressible: false });
-        x.insert(Ascii::new("lwp"), MimeRecord { mime: Mime::from_str("application/vnd.lotus-wordpro").unwrap(), compressible: false });
-        x.insert(Ascii::new("lzh"), MimeRecord { mime: Mime::from_str("application/x-lzh-compressed").unwrap(), compressible: false });
-        x.insert(Ascii::new("m13"), MimeRecord { mime: Mime::from_str("application/x-msmediaview").unwrap(), compressible: false });
-        x.insert(Ascii::new("m14"), MimeRecord { mime: Mime::from_str("application/x-msmediaview").unwrap(), compressible: false });
-        x.insert(Ascii::new("m1v"), MimeRecord { mime: Mime::from_str("video/mpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("m21"), MimeRecord { mime: Mime::from_str("application/mp21").unwrap(), compressible: false });
-        x.insert(Ascii::new("m2a"), MimeRecord { mime: Mime::from_str("audio/mpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("m2v"), MimeRecord { mime: Mime::from_str("video/mpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("m3a"), MimeRecord { mime: Mime::from_str("audio/mpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("m3u"), MimeRecord { mime: Mime::from_str("audio/x-mpegurl").unwrap(), compressible: false });
-        x.insert(Ascii::new("m3u8"), MimeRecord { mime: Mime::from_str("application/vnd.apple.mpegurl").unwrap(), compressible: false });
-        x.insert(Ascii::new("m4a"), MimeRecord { mime: Mime::from_str("audio/mp4").unwrap(), compressible: false });
-        x.insert(Ascii::new("m4p"), MimeRecord { mime: Mime::from_str("application/mp4").unwrap(), compressible: false });
-        x.insert(Ascii::new("m4u"), MimeRecord { mime: Mime::from_str("video/vnd.mpegurl").unwrap(), compressible: false });
-        x.insert(Ascii::new("m4v"), MimeRecord { mime: Mime::from_str("video/x-m4v").unwrap(), compressible: false });
-        x.insert(Ascii::new("ma"), MimeRecord { mime: Mime::from_str("application/mathematica").unwrap(), compressible: false });
-        x.insert(Ascii::new("mads"), MimeRecord { mime: Mime::from_str("application/mads+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("mag"), MimeRecord { mime: Mime::from_str("application/vnd.ecowin.chart").unwrap(), compressible: false });
-        x.insert(Ascii::new("maker"), MimeRecord { mime: Mime::from_str("application/vnd.framemaker").unwrap(), compressible: false });
-        x.insert(Ascii::new("man"), MimeRecord { mime: Mime::from_str("text/troff").unwrap(), compressible: false });
-        x.insert(Ascii::new("manifest"), MimeRecord { mime: Mime::from_str("text/cache-manifest").unwrap(), compressible: true });
-        x.insert(Ascii::new("map"), MimeRecord { mime: Mime::from_str("application/json; charset=utf-8").unwrap(), compressible: true });
-        x.insert(Ascii::new("mar"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("markdown"), MimeRecord { mime: Mime::from_str("text/markdown").unwrap(), compressible: true });
-        x.insert(Ascii::new("mathml"), MimeRecord { mime: Mime::from_str("application/mathml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("mb"), MimeRecord { mime: Mime::from_str("application/mathematica").unwrap(), compressible: false });
-        x.insert(Ascii::new("mbk"), MimeRecord { mime: Mime::from_str("application/vnd.mobius.mbk").unwrap(), compressible: false });
-        x.insert(Ascii::new("mbox"), MimeRecord { mime: Mime::from_str("application/mbox").unwrap(), compressible: false });
-        x.insert(Ascii::new("mc1"), MimeRecord { mime: Mime::from_str("application/vnd.medcalcdata").unwrap(), compressible: false });
-        x.insert(Ascii::new("mcd"), MimeRecord { mime: Mime::from_str("application/vnd.mcd").unwrap(), compressible: false });
-        x.insert(Ascii::new("mcurl"), MimeRecord { mime: Mime::from_str("text/vnd.curl.mcurl").unwrap(), compressible: false });
-        x.insert(Ascii::new("md"), MimeRecord { mime: Mime::from_str("text/markdown").unwrap(), compressible: true });
-        x.insert(Ascii::new("mdb"), MimeRecord { mime: Mime::from_str("application/x-msaccess").unwrap(), compressible: false });
-        x.insert(Ascii::new("mdi"), MimeRecord { mime: Mime::from_str("image/vnd.ms-modi").unwrap(), compressible: false });
-        x.insert(Ascii::new("me"), MimeRecord { mime: Mime::from_str("text/troff").unwrap(), compressible: false });
-        x.insert(Ascii::new("mesh"), MimeRecord { mime: Mime::from_str("model/mesh").unwrap(), compressible: false });
-        x.insert(Ascii::new("meta4"), MimeRecord { mime: Mime::from_str("application/metalink4+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("metalink"), MimeRecord { mime: Mime::from_str("application/metalink+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("mets"), MimeRecord { mime: Mime::from_str("application/mets+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("mfm"), MimeRecord { mime: Mime::from_str("application/vnd.mfmp").unwrap(), compressible: false });
-        x.insert(Ascii::new("mft"), MimeRecord { mime: Mime::from_str("application/rpki-manifest").unwrap(), compressible: false });
-        x.insert(Ascii::new("mgp"), MimeRecord { mime: Mime::from_str("application/vnd.osgeo.mapguide.package").unwrap(), compressible: false });
-        x.insert(Ascii::new("mgz"), MimeRecord { mime: Mime::from_str("application/vnd.proteus.magazine").unwrap(), compressible: false });
-        x.insert(Ascii::new("mid"), MimeRecord { mime: Mime::from_str("audio/midi").unwrap(), compressible: false });
-        x.insert(Ascii::new("midi"), MimeRecord { mime: Mime::from_str("audio/midi").unwrap(), compressible: false });
-        x.insert(Ascii::new("mie"), MimeRecord { mime: Mime::from_str("application/x-mie").unwrap(), compressible: false });
-        x.insert(Ascii::new("mif"), MimeRecord { mime: Mime::from_str("application/vnd.mif").unwrap(), compressible: false });
-        x.insert(Ascii::new("mime"), MimeRecord { mime: Mime::from_str("message/rfc822").unwrap(), compressible: true });
-        x.insert(Ascii::new("mj2"), MimeRecord { mime: Mime::from_str("video/mj2").unwrap(), compressible: false });
-        x.insert(Ascii::new("mjp2"), MimeRecord { mime: Mime::from_str("video/mj2").unwrap(), compressible: false });
-        x.insert(Ascii::new("mjs"), MimeRecord { mime: Mime::from_str("application/javascript; charset=utf-8").unwrap(), compressible: true });
-        x.insert(Ascii::new("mk3d"), MimeRecord { mime: Mime::from_str("video/x-matroska").unwrap(), compressible: false });
-        x.insert(Ascii::new("mka"), MimeRecord { mime: Mime::from_str("audio/x-matroska").unwrap(), compressible: false });
-        x.insert(Ascii::new("mkd"), MimeRecord { mime: Mime::from_str("text/x-markdown").unwrap(), compressible: true });
-        x.insert(Ascii::new("mks"), MimeRecord { mime: Mime::from_str("video/x-matroska").unwrap(), compressible: false });
-        x.insert(Ascii::new("mkv"), MimeRecord { mime: Mime::from_str("video/x-matroska").unwrap(), compressible: false });
-        x.insert(Ascii::new("mlp"), MimeRecord { mime: Mime::from_str("application/vnd.dolby.mlp").unwrap(), compressible: false });
-        x.insert(Ascii::new("mmd"), MimeRecord { mime: Mime::from_str("application/vnd.chipnuts.karaoke-mmd").unwrap(), compressible: false });
-        x.insert(Ascii::new("mmf"), MimeRecord { mime: Mime::from_str("application/vnd.smaf").unwrap(), compressible: false });
-        x.insert(Ascii::new("mml"), MimeRecord { mime: Mime::from_str("text/mathml").unwrap(), compressible: false });
-        x.insert(Ascii::new("mmr"), MimeRecord { mime: Mime::from_str("image/vnd.fujixerox.edmics-mmr").unwrap(), compressible: false });
-        x.insert(Ascii::new("mng"), MimeRecord { mime: Mime::from_str("video/x-mng").unwrap(), compressible: false });
-        x.insert(Ascii::new("mny"), MimeRecord { mime: Mime::from_str("application/x-msmoney").unwrap(), compressible: false });
-        x.insert(Ascii::new("mobi"), MimeRecord { mime: Mime::from_str("application/x-mobipocket-ebook").unwrap(), compressible: false });
-        x.insert(Ascii::new("mods"), MimeRecord { mime: Mime::from_str("application/mods+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("mov"), MimeRecord { mime: Mime::from_str("video/quicktime").unwrap(), compressible: false });
-        x.insert(Ascii::new("movie"), MimeRecord { mime: Mime::from_str("video/x-sgi-movie").unwrap(), compressible: false });
-        x.insert(Ascii::new("mp2"), MimeRecord { mime: Mime::from_str("audio/mpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("mp21"), MimeRecord { mime: Mime::from_str("application/mp21").unwrap(), compressible: false });
-        x.insert(Ascii::new("mp2a"), MimeRecord { mime: Mime::from_str("audio/mpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("mp3"), MimeRecord { mime: Mime::from_str("audio/mpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("mp4"), MimeRecord { mime: Mime::from_str("video/mp4").unwrap(), compressible: false });
-        x.insert(Ascii::new("mp4a"), MimeRecord { mime: Mime::from_str("audio/mp4").unwrap(), compressible: false });
-        x.insert(Ascii::new("mp4s"), MimeRecord { mime: Mime::from_str("application/mp4").unwrap(), compressible: false });
-        x.insert(Ascii::new("mp4v"), MimeRecord { mime: Mime::from_str("video/mp4").unwrap(), compressible: false });
-        x.insert(Ascii::new("mpc"), MimeRecord { mime: Mime::from_str("application/vnd.mophun.certificate").unwrap(), compressible: false });
-        x.insert(Ascii::new("mpd"), MimeRecord { mime: Mime::from_str("application/dash+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("mpe"), MimeRecord { mime: Mime::from_str("video/mpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("mpeg"), MimeRecord { mime: Mime::from_str("video/mpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("mpg"), MimeRecord { mime: Mime::from_str("video/mpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("mpg4"), MimeRecord { mime: Mime::from_str("video/mp4").unwrap(), compressible: false });
-        x.insert(Ascii::new("mpga"), MimeRecord { mime: Mime::from_str("audio/mpeg").unwrap(), compressible: false });
-        x.insert(Ascii::new("mpkg"), MimeRecord { mime: Mime::from_str("application/vnd.apple.installer+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("mpm"), MimeRecord { mime: Mime::from_str("application/vnd.blueice.multipass").unwrap(), compressible: false });
-        x.insert(Ascii::new("mpn"), MimeRecord { mime: Mime::from_str("application/vnd.mophun.application").unwrap(), compressible: false });
-        x.insert(Ascii::new("mpp"), MimeRecord { mime: Mime::from_str("application/vnd.ms-project").unwrap(), compressible: false });
-        x.insert(Ascii::new("mpt"), MimeRecord { mime: Mime::from_str("application/vnd.ms-project").unwrap(), compressible: false });
-        x.insert(Ascii::new("mpy"), MimeRecord { mime: Mime::from_str("application/vnd.ibm.minipay").unwrap(), compressible: false });
-        x.insert(Ascii::new("mqy"), MimeRecord { mime: Mime::from_str("application/vnd.mobius.mqy").unwrap(), compressible: false });
-        x.insert(Ascii::new("mrc"), MimeRecord { mime: Mime::from_str("application/marc").unwrap(), compressible: false });
-        x.insert(Ascii::new("mrcx"), MimeRecord { mime: Mime::from_str("application/marcxml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("ms"), MimeRecord { mime: Mime::from_str("text/troff").unwrap(), compressible: false });
-        x.insert(Ascii::new("mscml"), MimeRecord { mime: Mime::from_str("application/mediaservercontrol+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("mseed"), MimeRecord { mime: Mime::from_str("application/vnd.fdsn.mseed").unwrap(), compressible: false });
-        x.insert(Ascii::new("mseq"), MimeRecord { mime: Mime::from_str("application/vnd.mseq").unwrap(), compressible: false });
-        x.insert(Ascii::new("msf"), MimeRecord { mime: Mime::from_str("application/vnd.epson.msf").unwrap(), compressible: false });
-        x.insert(Ascii::new("msg"), MimeRecord { mime: Mime::from_str("application/vnd.ms-outlook").unwrap(), compressible: false });
-        x.insert(Ascii::new("msh"), MimeRecord { mime: Mime::from_str("model/mesh").unwrap(), compressible: false });
-        x.insert(Ascii::new("msi"), MimeRecord { mime: Mime::from_str("application/x-msdownload").unwrap(), compressible: false });
-        x.insert(Ascii::new("msl"), MimeRecord { mime: Mime::from_str("application/vnd.mobius.msl").unwrap(), compressible: false });
-        x.insert(Ascii::new("msm"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("msp"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("msty"), MimeRecord { mime: Mime::from_str("application/vnd.muvee.style").unwrap(), compressible: false });
-        x.insert(Ascii::new("mts"), MimeRecord { mime: Mime::from_str("model/vnd.mts").unwrap(), compressible: false });
-        x.insert(Ascii::new("mus"), MimeRecord { mime: Mime::from_str("application/vnd.musician").unwrap(), compressible: false });
-        x.insert(Ascii::new("musicxml"), MimeRecord { mime: Mime::from_str("application/vnd.recordare.musicxml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("mvb"), MimeRecord { mime: Mime::from_str("application/x-msmediaview").unwrap(), compressible: false });
-        x.insert(Ascii::new("mwf"), MimeRecord { mime: Mime::from_str("application/vnd.mfer").unwrap(), compressible: false });
-        x.insert(Ascii::new("mxf"), MimeRecord { mime: Mime::from_str("application/mxf").unwrap(), compressible: false });
-        x.insert(Ascii::new("mxl"), MimeRecord { mime: Mime::from_str("application/vnd.recordare.musicxml").unwrap(), compressible: false });
-        x.insert(Ascii::new("mxml"), MimeRecord { mime: Mime::from_str("application/xv+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("mxs"), MimeRecord { mime: Mime::from_str("application/vnd.triscape.mxs").unwrap(), compressible: false });
-        x.insert(Ascii::new("mxu"), MimeRecord { mime: Mime::from_str("video/vnd.mpegurl").unwrap(), compressible: false });
-        x.insert(Ascii::new("n-gage"), MimeRecord { mime: Mime::from_str("application/vnd.nokia.n-gage.symbian.install").unwrap(), compressible: false });
-        x.insert(Ascii::new("n3"), MimeRecord { mime: Mime::from_str("text/n3").unwrap(), compressible: true });
-        x.insert(Ascii::new("nb"), MimeRecord { mime: Mime::from_str("application/mathematica").unwrap(), compressible: false });
-        x.insert(Ascii::new("nbp"), MimeRecord { mime: Mime::from_str("application/vnd.wolfram.player").unwrap(), compressible: false });
-        x.insert(Ascii::new("nc"), MimeRecord { mime: Mime::from_str("application/x-netcdf").unwrap(), compressible: false });
-        x.insert(Ascii::new("ncx"), MimeRecord { mime: Mime::from_str("application/x-dtbncx+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("nfo"), MimeRecord { mime: Mime::from_str("text/x-nfo").unwrap(), compressible: false });
-        x.insert(Ascii::new("ngdat"), MimeRecord { mime: Mime::from_str("application/vnd.nokia.n-gage.data").unwrap(), compressible: false });
-        x.insert(Ascii::new("nitf"), MimeRecord { mime: Mime::from_str("application/vnd.nitf").unwrap(), compressible: false });
-        x.insert(Ascii::new("nlu"), MimeRecord { mime: Mime::from_str("application/vnd.neurolanguage.nlu").unwrap(), compressible: false });
-        x.insert(Ascii::new("nml"), MimeRecord { mime: Mime::from_str("application/vnd.enliven").unwrap(), compressible: false });
-        x.insert(Ascii::new("nnd"), MimeRecord { mime: Mime::from_str("application/vnd.noblenet-directory").unwrap(), compressible: false });
-        x.insert(Ascii::new("nns"), MimeRecord { mime: Mime::from_str("application/vnd.noblenet-sealer").unwrap(), compressible: false });
-        x.insert(Ascii::new("nnw"), MimeRecord { mime: Mime::from_str("application/vnd.noblenet-web").unwrap(), compressible: false });
-        x.insert(Ascii::new("npx"), MimeRecord { mime: Mime::from_str("image/vnd.net-fpx").unwrap(), compressible: false });
-        x.insert(Ascii::new("nsc"), MimeRecord { mime: Mime::from_str("application/x-conference").unwrap(), compressible: false });
-        x.insert(Ascii::new("nsf"), MimeRecord { mime: Mime::from_str("application/vnd.lotus-notes").unwrap(), compressible: false });
-        x.insert(Ascii::new("ntf"), MimeRecord { mime: Mime::from_str("application/vnd.nitf").unwrap(), compressible: false });
-        x.insert(Ascii::new("nzb"), MimeRecord { mime: Mime::from_str("application/x-nzb").unwrap(), compressible: false });
-        x.insert(Ascii::new("oa2"), MimeRecord { mime: Mime::from_str("application/vnd.fujitsu.oasys2").unwrap(), compressible: false });
-        x.insert(Ascii::new("oa3"), MimeRecord { mime: Mime::from_str("application/vnd.fujitsu.oasys3").unwrap(), compressible: false });
-        x.insert(Ascii::new("oas"), MimeRecord { mime: Mime::from_str("application/vnd.fujitsu.oasys").unwrap(), compressible: false });
-        x.insert(Ascii::new("obd"), MimeRecord { mime: Mime::from_str("application/x-msbinder").unwrap(), compressible: false });
-        x.insert(Ascii::new("obj"), MimeRecord { mime: Mime::from_str("application/x-tgif").unwrap(), compressible: false });
-        x.insert(Ascii::new("oda"), MimeRecord { mime: Mime::from_str("application/oda").unwrap(), compressible: false });
-        x.insert(Ascii::new("odb"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.database").unwrap(), compressible: false });
-        x.insert(Ascii::new("odc"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.chart").unwrap(), compressible: false });
-        x.insert(Ascii::new("odf"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.formula").unwrap(), compressible: false });
-        x.insert(Ascii::new("odft"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.formula-template").unwrap(), compressible: false });
-        x.insert(Ascii::new("odg"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.graphics").unwrap(), compressible: false });
-        x.insert(Ascii::new("odi"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.image").unwrap(), compressible: false });
-        x.insert(Ascii::new("odm"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.text-master").unwrap(), compressible: false });
-        x.insert(Ascii::new("odp"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.presentation").unwrap(), compressible: false });
-        x.insert(Ascii::new("ods"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.spreadsheet").unwrap(), compressible: false });
-        x.insert(Ascii::new("odt"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.text").unwrap(), compressible: false });
-        x.insert(Ascii::new("oga"), MimeRecord { mime: Mime::from_str("audio/ogg").unwrap(), compressible: false });
-        x.insert(Ascii::new("ogg"), MimeRecord { mime: Mime::from_str("audio/ogg").unwrap(), compressible: false });
-        x.insert(Ascii::new("ogv"), MimeRecord { mime: Mime::from_str("video/ogg").unwrap(), compressible: false });
-        x.insert(Ascii::new("ogx"), MimeRecord { mime: Mime::from_str("application/ogg").unwrap(), compressible: false });
-        x.insert(Ascii::new("omdoc"), MimeRecord { mime: Mime::from_str("application/omdoc+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("onepkg"), MimeRecord { mime: Mime::from_str("application/onenote").unwrap(), compressible: false });
-        x.insert(Ascii::new("onetmp"), MimeRecord { mime: Mime::from_str("application/onenote").unwrap(), compressible: false });
-        x.insert(Ascii::new("onetoc"), MimeRecord { mime: Mime::from_str("application/onenote").unwrap(), compressible: false });
-        x.insert(Ascii::new("onetoc2"), MimeRecord { mime: Mime::from_str("application/onenote").unwrap(), compressible: false });
-        x.insert(Ascii::new("opf"), MimeRecord { mime: Mime::from_str("application/oebps-package+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("opml"), MimeRecord { mime: Mime::from_str("text/x-opml").unwrap(), compressible: false });
-        x.insert(Ascii::new("oprc"), MimeRecord { mime: Mime::from_str("application/vnd.palm").unwrap(), compressible: false });
-        x.insert(Ascii::new("org"), MimeRecord { mime: Mime::from_str("application/vnd.lotus-organizer").unwrap(), compressible: false });
-        x.insert(Ascii::new("osf"), MimeRecord { mime: Mime::from_str("application/vnd.yamaha.openscoreformat").unwrap(), compressible: false });
-        x.insert(Ascii::new("osfpvg"), MimeRecord { mime: Mime::from_str("application/vnd.yamaha.openscoreformat.osfpvg+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("otc"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.chart-template").unwrap(), compressible: false });
-        x.insert(Ascii::new("otf"), MimeRecord { mime: Mime::from_str("font/otf").unwrap(), compressible: true });
-        x.insert(Ascii::new("otg"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.graphics-template").unwrap(), compressible: false });
-        x.insert(Ascii::new("oth"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.text-web").unwrap(), compressible: false });
-        x.insert(Ascii::new("oti"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.image-template").unwrap(), compressible: false });
-        x.insert(Ascii::new("otp"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.presentation-template").unwrap(), compressible: false });
-        x.insert(Ascii::new("ots"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.spreadsheet-template").unwrap(), compressible: false });
-        x.insert(Ascii::new("ott"), MimeRecord { mime: Mime::from_str("application/vnd.oasis.opendocument.text-template").unwrap(), compressible: false });
-        x.insert(Ascii::new("ova"), MimeRecord { mime: Mime::from_str("application/x-virtualbox-ova").unwrap(), compressible: true });
-        x.insert(Ascii::new("ovf"), MimeRecord { mime: Mime::from_str("application/x-virtualbox-ovf").unwrap(), compressible: true });
-        x.insert(Ascii::new("oxps"), MimeRecord { mime: Mime::from_str("application/oxps").unwrap(), compressible: false });
-        x.insert(Ascii::new("oxt"), MimeRecord { mime: Mime::from_str("application/vnd.openofficeorg.extension").unwrap(), compressible: false });
-        x.insert(Ascii::new("p"), MimeRecord { mime: Mime::from_str("text/x-pascal").unwrap(), compressible: false });
-        x.insert(Ascii::new("p10"), MimeRecord { mime: Mime::from_str("application/pkcs10").unwrap(), compressible: false });
-        x.insert(Ascii::new("p12"), MimeRecord { mime: Mime::from_str("application/x-pkcs12").unwrap(), compressible: false });
-        x.insert(Ascii::new("p7b"), MimeRecord { mime: Mime::from_str("application/x-pkcs7-certificates").unwrap(), compressible: false });
-        x.insert(Ascii::new("p7c"), MimeRecord { mime: Mime::from_str("application/pkcs7-mime").unwrap(), compressible: false });
-        x.insert(Ascii::new("p7m"), MimeRecord { mime: Mime::from_str("application/pkcs7-mime").unwrap(), compressible: false });
-        x.insert(Ascii::new("p7r"), MimeRecord { mime: Mime::from_str("application/x-pkcs7-certreqresp").unwrap(), compressible: false });
-        x.insert(Ascii::new("p7s"), MimeRecord { mime: Mime::from_str("application/pkcs7-signature").unwrap(), compressible: false });
-        x.insert(Ascii::new("p8"), MimeRecord { mime: Mime::from_str("application/pkcs8").unwrap(), compressible: false });
-        x.insert(Ascii::new("pac"), MimeRecord { mime: Mime::from_str("application/x-ns-proxy-autoconfig").unwrap(), compressible: true });
-        x.insert(Ascii::new("pas"), MimeRecord { mime: Mime::from_str("text/x-pascal").unwrap(), compressible: false });
-        x.insert(Ascii::new("paw"), MimeRecord { mime: Mime::from_str("application/vnd.pawaafile").unwrap(), compressible: false });
-        x.insert(Ascii::new("pbd"), MimeRecord { mime: Mime::from_str("application/vnd.powerbuilder6").unwrap(), compressible: false });
-        x.insert(Ascii::new("pbm"), MimeRecord { mime: Mime::from_str("image/x-portable-bitmap").unwrap(), compressible: false });
-        x.insert(Ascii::new("pcap"), MimeRecord { mime: Mime::from_str("application/vnd.tcpdump.pcap").unwrap(), compressible: false });
-        x.insert(Ascii::new("pcf"), MimeRecord { mime: Mime::from_str("application/x-font-pcf").unwrap(), compressible: false });
-        x.insert(Ascii::new("pcl"), MimeRecord { mime: Mime::from_str("application/vnd.hp-pcl").unwrap(), compressible: false });
-        x.insert(Ascii::new("pclxl"), MimeRecord { mime: Mime::from_str("application/vnd.hp-pclxl").unwrap(), compressible: false });
-        x.insert(Ascii::new("pct"), MimeRecord { mime: Mime::from_str("image/x-pict").unwrap(), compressible: false });
-        x.insert(Ascii::new("pcurl"), MimeRecord { mime: Mime::from_str("application/vnd.curl.pcurl").unwrap(), compressible: false });
-        x.insert(Ascii::new("pcx"), MimeRecord { mime: Mime::from_str("image/x-pcx").unwrap(), compressible: false });
-        x.insert(Ascii::new("pdb"), MimeRecord { mime: Mime::from_str("application/vnd.palm").unwrap(), compressible: false });
-        x.insert(Ascii::new("pde"), MimeRecord { mime: Mime::from_str("text/x-processing").unwrap(), compressible: true });
-        x.insert(Ascii::new("pdf"), MimeRecord { mime: Mime::from_str("application/pdf").unwrap(), compressible: false });
-        x.insert(Ascii::new("pem"), MimeRecord { mime: Mime::from_str("application/x-x509-ca-cert").unwrap(), compressible: false });
-        x.insert(Ascii::new("pfa"), MimeRecord { mime: Mime::from_str("application/x-font-type1").unwrap(), compressible: false });
-        x.insert(Ascii::new("pfb"), MimeRecord { mime: Mime::from_str("application/x-font-type1").unwrap(), compressible: false });
-        x.insert(Ascii::new("pfm"), MimeRecord { mime: Mime::from_str("application/x-font-type1").unwrap(), compressible: false });
-        x.insert(Ascii::new("pfr"), MimeRecord { mime: Mime::from_str("application/font-tdpfr").unwrap(), compressible: false });
-        x.insert(Ascii::new("pfx"), MimeRecord { mime: Mime::from_str("application/x-pkcs12").unwrap(), compressible: false });
-        x.insert(Ascii::new("pgm"), MimeRecord { mime: Mime::from_str("image/x-portable-graymap").unwrap(), compressible: false });
-        x.insert(Ascii::new("pgn"), MimeRecord { mime: Mime::from_str("application/x-chess-pgn").unwrap(), compressible: false });
-        x.insert(Ascii::new("pgp"), MimeRecord { mime: Mime::from_str("application/pgp-encrypted").unwrap(), compressible: false });
-        x.insert(Ascii::new("php"), MimeRecord { mime: Mime::from_str("application/x-httpd-php").unwrap(), compressible: true });
-        x.insert(Ascii::new("pic"), MimeRecord { mime: Mime::from_str("image/x-pict").unwrap(), compressible: false });
-        x.insert(Ascii::new("pkg"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("pki"), MimeRecord { mime: Mime::from_str("application/pkixcmp").unwrap(), compressible: false });
-        x.insert(Ascii::new("pkipath"), MimeRecord { mime: Mime::from_str("application/pkix-pkipath").unwrap(), compressible: false });
-        x.insert(Ascii::new("pkpass"), MimeRecord { mime: Mime::from_str("application/vnd.apple.pkpass").unwrap(), compressible: false });
-        x.insert(Ascii::new("pl"), MimeRecord { mime: Mime::from_str("application/x-perl").unwrap(), compressible: false });
-        x.insert(Ascii::new("plb"), MimeRecord { mime: Mime::from_str("application/vnd.3gpp.pic-bw-large").unwrap(), compressible: false });
-        x.insert(Ascii::new("plc"), MimeRecord { mime: Mime::from_str("application/vnd.mobius.plc").unwrap(), compressible: false });
-        x.insert(Ascii::new("plf"), MimeRecord { mime: Mime::from_str("application/vnd.pocketlearn").unwrap(), compressible: false });
-        x.insert(Ascii::new("pls"), MimeRecord { mime: Mime::from_str("application/pls+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("pm"), MimeRecord { mime: Mime::from_str("application/x-perl").unwrap(), compressible: false });
-        x.insert(Ascii::new("pml"), MimeRecord { mime: Mime::from_str("application/vnd.ctc-posml").unwrap(), compressible: false });
-        x.insert(Ascii::new("png"), MimeRecord { mime: Mime::from_str("image/png").unwrap(), compressible: false });
-        x.insert(Ascii::new("pnm"), MimeRecord { mime: Mime::from_str("image/x-portable-anymap").unwrap(), compressible: false });
-        x.insert(Ascii::new("portpkg"), MimeRecord { mime: Mime::from_str("application/vnd.macports.portpkg").unwrap(), compressible: false });
-        x.insert(Ascii::new("pot"), MimeRecord { mime: Mime::from_str("application/vnd.ms-powerpoint").unwrap(), compressible: false });
-        x.insert(Ascii::new("potm"), MimeRecord { mime: Mime::from_str("application/vnd.ms-powerpoint.template.macroenabled.12").unwrap(), compressible: false });
-        x.insert(Ascii::new("potx"), MimeRecord { mime: Mime::from_str("application/vnd.openxmlformats-officedocument.presentationml.template").unwrap(), compressible: false });
-        x.insert(Ascii::new("ppam"), MimeRecord { mime: Mime::from_str("application/vnd.ms-powerpoint.addin.macroenabled.12").unwrap(), compressible: false });
-        x.insert(Ascii::new("ppd"), MimeRecord { mime: Mime::from_str("application/vnd.cups-ppd").unwrap(), compressible: false });
-        x.insert(Ascii::new("ppm"), MimeRecord { mime: Mime::from_str("image/x-portable-pixmap").unwrap(), compressible: false });
-        x.insert(Ascii::new("pps"), MimeRecord { mime: Mime::from_str("application/vnd.ms-powerpoint").unwrap(), compressible: false });
-        x.insert(Ascii::new("ppsm"), MimeRecord { mime: Mime::from_str("application/vnd.ms-powerpoint.slideshow.macroenabled.12").unwrap(), compressible: false });
-        x.insert(Ascii::new("ppsx"), MimeRecord { mime: Mime::from_str("application/vnd.openxmlformats-officedocument.presentationml.slideshow").unwrap(), compressible: false });
-        x.insert(Ascii::new("ppt"), MimeRecord { mime: Mime::from_str("application/vnd.ms-powerpoint").unwrap(), compressible: false });
-        x.insert(Ascii::new("pptm"), MimeRecord { mime: Mime::from_str("application/vnd.ms-powerpoint.presentation.macroenabled.12").unwrap(), compressible: false });
-        x.insert(Ascii::new("pptx"), MimeRecord { mime: Mime::from_str("application/vnd.openxmlformats-officedocument.presentationml.presentation").unwrap(), compressible: false });
-        x.insert(Ascii::new("pqa"), MimeRecord { mime: Mime::from_str("application/vnd.palm").unwrap(), compressible: false });
-        x.insert(Ascii::new("prc"), MimeRecord { mime: Mime::from_str("application/x-mobipocket-ebook").unwrap(), compressible: false });
-        x.insert(Ascii::new("pre"), MimeRecord { mime: Mime::from_str("application/vnd.lotus-freelance").unwrap(), compressible: false });
-        x.insert(Ascii::new("prf"), MimeRecord { mime: Mime::from_str("application/pics-rules").unwrap(), compressible: false });
-        x.insert(Ascii::new("ps"), MimeRecord { mime: Mime::from_str("application/postscript").unwrap(), compressible: true });
-        x.insert(Ascii::new("psb"), MimeRecord { mime: Mime::from_str("application/vnd.3gpp.pic-bw-small").unwrap(), compressible: false });
-        x.insert(Ascii::new("psd"), MimeRecord { mime: Mime::from_str("image/vnd.adobe.photoshop").unwrap(), compressible: true });
-        x.insert(Ascii::new("psf"), MimeRecord { mime: Mime::from_str("application/x-font-linux-psf").unwrap(), compressible: false });
-        x.insert(Ascii::new("pskcxml"), MimeRecord { mime: Mime::from_str("application/pskc+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("ptid"), MimeRecord { mime: Mime::from_str("application/vnd.pvi.ptid1").unwrap(), compressible: false });
-        x.insert(Ascii::new("pub"), MimeRecord { mime: Mime::from_str("application/x-mspublisher").unwrap(), compressible: false });
-        x.insert(Ascii::new("pvb"), MimeRecord { mime: Mime::from_str("application/vnd.3gpp.pic-bw-var").unwrap(), compressible: false });
-        x.insert(Ascii::new("pwn"), MimeRecord { mime: Mime::from_str("application/vnd.3m.post-it-notes").unwrap(), compressible: false });
-        x.insert(Ascii::new("pya"), MimeRecord { mime: Mime::from_str("audio/vnd.ms-playready.media.pya").unwrap(), compressible: false });
-        x.insert(Ascii::new("pyv"), MimeRecord { mime: Mime::from_str("video/vnd.ms-playready.media.pyv").unwrap(), compressible: false });
-        x.insert(Ascii::new("qam"), MimeRecord { mime: Mime::from_str("application/vnd.epson.quickanime").unwrap(), compressible: false });
-        x.insert(Ascii::new("qbo"), MimeRecord { mime: Mime::from_str("application/vnd.intu.qbo").unwrap(), compressible: false });
-        x.insert(Ascii::new("qfx"), MimeRecord { mime: Mime::from_str("application/vnd.intu.qfx").unwrap(), compressible: false });
-        x.insert(Ascii::new("qps"), MimeRecord { mime: Mime::from_str("application/vnd.publishare-delta-tree").unwrap(), compressible: false });
-        x.insert(Ascii::new("qt"), MimeRecord { mime: Mime::from_str("video/quicktime").unwrap(), compressible: false });
-        x.insert(Ascii::new("qwd"), MimeRecord { mime: Mime::from_str("application/vnd.quark.quarkxpress").unwrap(), compressible: false });
-        x.insert(Ascii::new("qwt"), MimeRecord { mime: Mime::from_str("application/vnd.quark.quarkxpress").unwrap(), compressible: false });
-        x.insert(Ascii::new("qxb"), MimeRecord { mime: Mime::from_str("application/vnd.quark.quarkxpress").unwrap(), compressible: false });
-        x.insert(Ascii::new("qxd"), MimeRecord { mime: Mime::from_str("application/vnd.quark.quarkxpress").unwrap(), compressible: false });
-        x.insert(Ascii::new("qxl"), MimeRecord { mime: Mime::from_str("application/vnd.quark.quarkxpress").unwrap(), compressible: false });
-        x.insert(Ascii::new("qxt"), MimeRecord { mime: Mime::from_str("application/vnd.quark.quarkxpress").unwrap(), compressible: false });
-        x.insert(Ascii::new("ra"), MimeRecord { mime: Mime::from_str("audio/x-pn-realaudio").unwrap(), compressible: false });
-        x.insert(Ascii::new("ram"), MimeRecord { mime: Mime::from_str("audio/x-pn-realaudio").unwrap(), compressible: false });
-        x.insert(Ascii::new("raml"), MimeRecord { mime: Mime::from_str("application/raml+yaml").unwrap(), compressible: true });
-        x.insert(Ascii::new("rar"), MimeRecord { mime: Mime::from_str("application/x-rar-compressed").unwrap(), compressible: false });
-        x.insert(Ascii::new("ras"), MimeRecord { mime: Mime::from_str("image/x-cmu-raster").unwrap(), compressible: false });
-        x.insert(Ascii::new("rcprofile"), MimeRecord { mime: Mime::from_str("application/vnd.ipunplugged.rcprofile").unwrap(), compressible: false });
-        x.insert(Ascii::new("rdf"), MimeRecord { mime: Mime::from_str("application/rdf+xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("rdz"), MimeRecord { mime: Mime::from_str("application/vnd.data-vision.rdz").unwrap(), compressible: false });
-        x.insert(Ascii::new("rep"), MimeRecord { mime: Mime::from_str("application/vnd.businessobjects").unwrap(), compressible: false });
-        x.insert(Ascii::new("res"), MimeRecord { mime: Mime::from_str("application/x-dtbresource+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("rgb"), MimeRecord { mime: Mime::from_str("image/x-rgb").unwrap(), compressible: false });
-        x.insert(Ascii::new("rif"), MimeRecord { mime: Mime::from_str("application/reginfo+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("rip"), MimeRecord { mime: Mime::from_str("audio/vnd.rip").unwrap(), compressible: false });
-        x.insert(Ascii::new("ris"), MimeRecord { mime: Mime::from_str("application/x-research-info-systems").unwrap(), compressible: false });
-        x.insert(Ascii::new("rl"), MimeRecord { mime: Mime::from_str("application/resource-lists+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("rlc"), MimeRecord { mime: Mime::from_str("image/vnd.fujixerox.edmics-rlc").unwrap(), compressible: false });
-        x.insert(Ascii::new("rld"), MimeRecord { mime: Mime::from_str("application/resource-lists-diff+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("rm"), MimeRecord { mime: Mime::from_str("application/vnd.rn-realmedia").unwrap(), compressible: false });
-        x.insert(Ascii::new("rmi"), MimeRecord { mime: Mime::from_str("audio/midi").unwrap(), compressible: false });
-        x.insert(Ascii::new("rmp"), MimeRecord { mime: Mime::from_str("audio/x-pn-realaudio-plugin").unwrap(), compressible: false });
-        x.insert(Ascii::new("rms"), MimeRecord { mime: Mime::from_str("application/vnd.jcp.javame.midlet-rms").unwrap(), compressible: false });
-        x.insert(Ascii::new("rmvb"), MimeRecord { mime: Mime::from_str("application/vnd.rn-realmedia-vbr").unwrap(), compressible: false });
-        x.insert(Ascii::new("rnc"), MimeRecord { mime: Mime::from_str("application/relax-ng-compact-syntax").unwrap(), compressible: false });
-        x.insert(Ascii::new("rng"), MimeRecord { mime: Mime::from_str("application/xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("roa"), MimeRecord { mime: Mime::from_str("application/rpki-roa").unwrap(), compressible: false });
-        x.insert(Ascii::new("roff"), MimeRecord { mime: Mime::from_str("text/troff").unwrap(), compressible: false });
-        x.insert(Ascii::new("rp9"), MimeRecord { mime: Mime::from_str("application/vnd.cloanto.rp9").unwrap(), compressible: false });
-        x.insert(Ascii::new("rpm"), MimeRecord { mime: Mime::from_str("application/x-redhat-package-manager").unwrap(), compressible: false });
-        x.insert(Ascii::new("rpss"), MimeRecord { mime: Mime::from_str("application/vnd.nokia.radio-presets").unwrap(), compressible: false });
-        x.insert(Ascii::new("rpst"), MimeRecord { mime: Mime::from_str("application/vnd.nokia.radio-preset").unwrap(), compressible: false });
-        x.insert(Ascii::new("rq"), MimeRecord { mime: Mime::from_str("application/sparql-query").unwrap(), compressible: false });
-        x.insert(Ascii::new("rs"), MimeRecord { mime: Mime::from_str("application/rls-services+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("rsd"), MimeRecord { mime: Mime::from_str("application/rsd+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("rss"), MimeRecord { mime: Mime::from_str("application/rss+xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("rtf"), MimeRecord { mime: Mime::from_str("application/rtf").unwrap(), compressible: true });
-        x.insert(Ascii::new("rtx"), MimeRecord { mime: Mime::from_str("text/richtext").unwrap(), compressible: true });
-        x.insert(Ascii::new("run"), MimeRecord { mime: Mime::from_str("application/x-makeself").unwrap(), compressible: false });
-        x.insert(Ascii::new("s"), MimeRecord { mime: Mime::from_str("text/x-asm").unwrap(), compressible: false });
-        x.insert(Ascii::new("s3m"), MimeRecord { mime: Mime::from_str("audio/s3m").unwrap(), compressible: false });
-        x.insert(Ascii::new("saf"), MimeRecord { mime: Mime::from_str("application/vnd.yamaha.smaf-audio").unwrap(), compressible: false });
-        x.insert(Ascii::new("sass"), MimeRecord { mime: Mime::from_str("text/x-sass").unwrap(), compressible: false });
-        x.insert(Ascii::new("sbml"), MimeRecord { mime: Mime::from_str("application/sbml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("sc"), MimeRecord { mime: Mime::from_str("application/vnd.ibm.secure-container").unwrap(), compressible: false });
-        x.insert(Ascii::new("scd"), MimeRecord { mime: Mime::from_str("application/x-msschedule").unwrap(), compressible: false });
-        x.insert(Ascii::new("scm"), MimeRecord { mime: Mime::from_str("application/vnd.lotus-screencam").unwrap(), compressible: false });
-        x.insert(Ascii::new("scq"), MimeRecord { mime: Mime::from_str("application/scvp-cv-request").unwrap(), compressible: false });
-        x.insert(Ascii::new("scs"), MimeRecord { mime: Mime::from_str("application/scvp-cv-response").unwrap(), compressible: false });
-        x.insert(Ascii::new("scss"), MimeRecord { mime: Mime::from_str("text/x-scss").unwrap(), compressible: false });
-        x.insert(Ascii::new("scurl"), MimeRecord { mime: Mime::from_str("text/vnd.curl.scurl").unwrap(), compressible: false });
-        x.insert(Ascii::new("sda"), MimeRecord { mime: Mime::from_str("application/vnd.stardivision.draw").unwrap(), compressible: false });
-        x.insert(Ascii::new("sdc"), MimeRecord { mime: Mime::from_str("application/vnd.stardivision.calc").unwrap(), compressible: false });
-        x.insert(Ascii::new("sdd"), MimeRecord { mime: Mime::from_str("application/vnd.stardivision.impress").unwrap(), compressible: false });
-        x.insert(Ascii::new("sdkd"), MimeRecord { mime: Mime::from_str("application/vnd.solent.sdkm+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("sdkm"), MimeRecord { mime: Mime::from_str("application/vnd.solent.sdkm+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("sdp"), MimeRecord { mime: Mime::from_str("application/sdp").unwrap(), compressible: false });
-        x.insert(Ascii::new("sdw"), MimeRecord { mime: Mime::from_str("application/vnd.stardivision.writer").unwrap(), compressible: false });
-        x.insert(Ascii::new("sea"), MimeRecord { mime: Mime::from_str("application/x-sea").unwrap(), compressible: false });
-        x.insert(Ascii::new("see"), MimeRecord { mime: Mime::from_str("application/vnd.seemail").unwrap(), compressible: false });
-        x.insert(Ascii::new("seed"), MimeRecord { mime: Mime::from_str("application/vnd.fdsn.seed").unwrap(), compressible: false });
-        x.insert(Ascii::new("sema"), MimeRecord { mime: Mime::from_str("application/vnd.sema").unwrap(), compressible: false });
-        x.insert(Ascii::new("semd"), MimeRecord { mime: Mime::from_str("application/vnd.semd").unwrap(), compressible: false });
-        x.insert(Ascii::new("semf"), MimeRecord { mime: Mime::from_str("application/vnd.semf").unwrap(), compressible: false });
-        x.insert(Ascii::new("ser"), MimeRecord { mime: Mime::from_str("application/java-serialized-object").unwrap(), compressible: false });
-        x.insert(Ascii::new("setpay"), MimeRecord { mime: Mime::from_str("application/set-payment-initiation").unwrap(), compressible: false });
-        x.insert(Ascii::new("setreg"), MimeRecord { mime: Mime::from_str("application/set-registration-initiation").unwrap(), compressible: false });
-        x.insert(Ascii::new("sfd-hdstx"), MimeRecord { mime: Mime::from_str("application/vnd.hydrostatix.sof-data").unwrap(), compressible: false });
-        x.insert(Ascii::new("sfs"), MimeRecord { mime: Mime::from_str("application/vnd.spotfire.sfs").unwrap(), compressible: false });
-        x.insert(Ascii::new("sfv"), MimeRecord { mime: Mime::from_str("text/x-sfv").unwrap(), compressible: false });
-        x.insert(Ascii::new("sgi"), MimeRecord { mime: Mime::from_str("image/sgi").unwrap(), compressible: false });
-        x.insert(Ascii::new("sgl"), MimeRecord { mime: Mime::from_str("application/vnd.stardivision.writer-global").unwrap(), compressible: false });
-        x.insert(Ascii::new("sgm"), MimeRecord { mime: Mime::from_str("text/sgml").unwrap(), compressible: false });
-        x.insert(Ascii::new("sgml"), MimeRecord { mime: Mime::from_str("text/sgml").unwrap(), compressible: false });
-        x.insert(Ascii::new("sh"), MimeRecord { mime: Mime::from_str("application/x-sh").unwrap(), compressible: true });
-        x.insert(Ascii::new("shar"), MimeRecord { mime: Mime::from_str("application/x-shar").unwrap(), compressible: false });
-        x.insert(Ascii::new("shex"), MimeRecord { mime: Mime::from_str("text/shex").unwrap(), compressible: false });
-        x.insert(Ascii::new("shf"), MimeRecord { mime: Mime::from_str("application/shf+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("shtml"), MimeRecord { mime: Mime::from_str("text/html").unwrap(), compressible: true });
-        x.insert(Ascii::new("sid"), MimeRecord { mime: Mime::from_str("image/x-mrsid-image").unwrap(), compressible: false });
-        x.insert(Ascii::new("sig"), MimeRecord { mime: Mime::from_str("application/pgp-signature").unwrap(), compressible: false });
-        x.insert(Ascii::new("sil"), MimeRecord { mime: Mime::from_str("audio/silk").unwrap(), compressible: false });
-        x.insert(Ascii::new("silo"), MimeRecord { mime: Mime::from_str("model/mesh").unwrap(), compressible: false });
-        x.insert(Ascii::new("sis"), MimeRecord { mime: Mime::from_str("application/vnd.symbian.install").unwrap(), compressible: false });
-        x.insert(Ascii::new("sisx"), MimeRecord { mime: Mime::from_str("application/vnd.symbian.install").unwrap(), compressible: false });
-        x.insert(Ascii::new("sit"), MimeRecord { mime: Mime::from_str("application/x-stuffit").unwrap(), compressible: false });
-        x.insert(Ascii::new("sitx"), MimeRecord { mime: Mime::from_str("application/x-stuffitx").unwrap(), compressible: false });
-        x.insert(Ascii::new("skd"), MimeRecord { mime: Mime::from_str("application/vnd.koan").unwrap(), compressible: false });
-        x.insert(Ascii::new("skm"), MimeRecord { mime: Mime::from_str("application/vnd.koan").unwrap(), compressible: false });
-        x.insert(Ascii::new("skp"), MimeRecord { mime: Mime::from_str("application/vnd.koan").unwrap(), compressible: false });
-        x.insert(Ascii::new("skt"), MimeRecord { mime: Mime::from_str("application/vnd.koan").unwrap(), compressible: false });
-        x.insert(Ascii::new("sldm"), MimeRecord { mime: Mime::from_str("application/vnd.ms-powerpoint.slide.macroenabled.12").unwrap(), compressible: false });
-        x.insert(Ascii::new("sldx"), MimeRecord { mime: Mime::from_str("application/vnd.openxmlformats-officedocument.presentationml.slide").unwrap(), compressible: false });
-        x.insert(Ascii::new("slim"), MimeRecord { mime: Mime::from_str("text/slim").unwrap(), compressible: false });
-        x.insert(Ascii::new("slm"), MimeRecord { mime: Mime::from_str("text/slim").unwrap(), compressible: false });
-        x.insert(Ascii::new("slt"), MimeRecord { mime: Mime::from_str("application/vnd.epson.salt").unwrap(), compressible: false });
-        x.insert(Ascii::new("sm"), MimeRecord { mime: Mime::from_str("application/vnd.stepmania.stepchart").unwrap(), compressible: false });
-        x.insert(Ascii::new("smf"), MimeRecord { mime: Mime::from_str("application/vnd.stardivision.math").unwrap(), compressible: false });
-        x.insert(Ascii::new("smi"), MimeRecord { mime: Mime::from_str("application/smil+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("smil"), MimeRecord { mime: Mime::from_str("application/smil+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("smv"), MimeRecord { mime: Mime::from_str("video/x-smv").unwrap(), compressible: false });
-        x.insert(Ascii::new("smzip"), MimeRecord { mime: Mime::from_str("application/vnd.stepmania.package").unwrap(), compressible: false });
-        x.insert(Ascii::new("snd"), MimeRecord { mime: Mime::from_str("audio/basic").unwrap(), compressible: false });
-        x.insert(Ascii::new("snf"), MimeRecord { mime: Mime::from_str("application/x-font-snf").unwrap(), compressible: false });
-        x.insert(Ascii::new("so"), MimeRecord { mime: Mime::from_str("application/octet-stream").unwrap(), compressible: false });
-        x.insert(Ascii::new("spc"), MimeRecord { mime: Mime::from_str("application/x-pkcs7-certificates").unwrap(), compressible: false });
-        x.insert(Ascii::new("spf"), MimeRecord { mime: Mime::from_str("application/vnd.yamaha.smaf-phrase").unwrap(), compressible: false });
-        x.insert(Ascii::new("spl"), MimeRecord { mime: Mime::from_str("application/x-futuresplash").unwrap(), compressible: false });
-        x.insert(Ascii::new("spot"), MimeRecord { mime: Mime::from_str("text/vnd.in3d.spot").unwrap(), compressible: false });
-        x.insert(Ascii::new("spp"), MimeRecord { mime: Mime::from_str("application/scvp-vp-response").unwrap(), compressible: false });
-        x.insert(Ascii::new("spq"), MimeRecord { mime: Mime::from_str("application/scvp-vp-request").unwrap(), compressible: false });
-        x.insert(Ascii::new("spx"), MimeRecord { mime: Mime::from_str("audio/ogg").unwrap(), compressible: false });
-        x.insert(Ascii::new("sql"), MimeRecord { mime: Mime::from_str("application/x-sql").unwrap(), compressible: false });
-        x.insert(Ascii::new("src"), MimeRecord { mime: Mime::from_str("application/x-wais-source").unwrap(), compressible: false });
-        x.insert(Ascii::new("srt"), MimeRecord { mime: Mime::from_str("application/x-subrip").unwrap(), compressible: false });
-        x.insert(Ascii::new("sru"), MimeRecord { mime: Mime::from_str("application/sru+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("srx"), MimeRecord { mime: Mime::from_str("application/sparql-results+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("ssdl"), MimeRecord { mime: Mime::from_str("application/ssdl+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("sse"), MimeRecord { mime: Mime::from_str("application/vnd.kodak-descriptor").unwrap(), compressible: false });
-        x.insert(Ascii::new("ssf"), MimeRecord { mime: Mime::from_str("application/vnd.epson.ssf").unwrap(), compressible: false });
-        x.insert(Ascii::new("ssml"), MimeRecord { mime: Mime::from_str("application/ssml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("st"), MimeRecord { mime: Mime::from_str("application/vnd.sailingtracker.track").unwrap(), compressible: false });
-        x.insert(Ascii::new("stc"), MimeRecord { mime: Mime::from_str("application/vnd.sun.xml.calc.template").unwrap(), compressible: false });
-        x.insert(Ascii::new("std"), MimeRecord { mime: Mime::from_str("application/vnd.sun.xml.draw.template").unwrap(), compressible: false });
-        x.insert(Ascii::new("stf"), MimeRecord { mime: Mime::from_str("application/vnd.wt.stf").unwrap(), compressible: false });
-        x.insert(Ascii::new("sti"), MimeRecord { mime: Mime::from_str("application/vnd.sun.xml.impress.template").unwrap(), compressible: false });
-        x.insert(Ascii::new("stk"), MimeRecord { mime: Mime::from_str("application/hyperstudio").unwrap(), compressible: false });
-        x.insert(Ascii::new("stl"), MimeRecord { mime: Mime::from_str("application/vnd.ms-pki.stl").unwrap(), compressible: false });
-        x.insert(Ascii::new("str"), MimeRecord { mime: Mime::from_str("application/vnd.pg.format").unwrap(), compressible: false });
-        x.insert(Ascii::new("stw"), MimeRecord { mime: Mime::from_str("application/vnd.sun.xml.writer.template").unwrap(), compressible: false });
-        x.insert(Ascii::new("styl"), MimeRecord { mime: Mime::from_str("text/stylus").unwrap(), compressible: false });
-        x.insert(Ascii::new("stylus"), MimeRecord { mime: Mime::from_str("text/stylus").unwrap(), compressible: false });
-        x.insert(Ascii::new("sub"), MimeRecord { mime: Mime::from_str("text/vnd.dvb.subtitle").unwrap(), compressible: false });
-        x.insert(Ascii::new("sus"), MimeRecord { mime: Mime::from_str("application/vnd.sus-calendar").unwrap(), compressible: false });
-        x.insert(Ascii::new("susp"), MimeRecord { mime: Mime::from_str("application/vnd.sus-calendar").unwrap(), compressible: false });
-        x.insert(Ascii::new("sv4cpio"), MimeRecord { mime: Mime::from_str("application/x-sv4cpio").unwrap(), compressible: false });
-        x.insert(Ascii::new("sv4crc"), MimeRecord { mime: Mime::from_str("application/x-sv4crc").unwrap(), compressible: false });
-        x.insert(Ascii::new("svc"), MimeRecord { mime: Mime::from_str("application/vnd.dvb.service").unwrap(), compressible: false });
-        x.insert(Ascii::new("svd"), MimeRecord { mime: Mime::from_str("application/vnd.svd").unwrap(), compressible: false });
-        x.insert(Ascii::new("svg"), MimeRecord { mime: Mime::from_str("image/svg+xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("svgz"), MimeRecord { mime: Mime::from_str("image/svg+xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("swa"), MimeRecord { mime: Mime::from_str("application/x-director").unwrap(), compressible: false });
-        x.insert(Ascii::new("swf"), MimeRecord { mime: Mime::from_str("application/x-shockwave-flash").unwrap(), compressible: false });
-        x.insert(Ascii::new("swi"), MimeRecord { mime: Mime::from_str("application/vnd.aristanetworks.swi").unwrap(), compressible: false });
-        x.insert(Ascii::new("sxc"), MimeRecord { mime: Mime::from_str("application/vnd.sun.xml.calc").unwrap(), compressible: false });
-        x.insert(Ascii::new("sxd"), MimeRecord { mime: Mime::from_str("application/vnd.sun.xml.draw").unwrap(), compressible: false });
-        x.insert(Ascii::new("sxg"), MimeRecord { mime: Mime::from_str("application/vnd.sun.xml.writer.global").unwrap(), compressible: false });
-        x.insert(Ascii::new("sxi"), MimeRecord { mime: Mime::from_str("application/vnd.sun.xml.impress").unwrap(), compressible: false });
-        x.insert(Ascii::new("sxm"), MimeRecord { mime: Mime::from_str("application/vnd.sun.xml.math").unwrap(), compressible: false });
-        x.insert(Ascii::new("sxw"), MimeRecord { mime: Mime::from_str("application/vnd.sun.xml.writer").unwrap(), compressible: false });
-        x.insert(Ascii::new("t"), MimeRecord { mime: Mime::from_str("text/troff").unwrap(), compressible: false });
-        x.insert(Ascii::new("t3"), MimeRecord { mime: Mime::from_str("application/x-t3vm-image").unwrap(), compressible: false });
-        x.insert(Ascii::new("taglet"), MimeRecord { mime: Mime::from_str("application/vnd.mynfc").unwrap(), compressible: false });
-        x.insert(Ascii::new("tao"), MimeRecord { mime: Mime::from_str("application/vnd.tao.intent-module-archive").unwrap(), compressible: false });
-        x.insert(Ascii::new("tar"), MimeRecord { mime: Mime::from_str("application/x-tar").unwrap(), compressible: true });
-        x.insert(Ascii::new("tcap"), MimeRecord { mime: Mime::from_str("application/vnd.3gpp2.tcap").unwrap(), compressible: false });
-        x.insert(Ascii::new("tcl"), MimeRecord { mime: Mime::from_str("application/x-tcl").unwrap(), compressible: false });
-        x.insert(Ascii::new("teacher"), MimeRecord { mime: Mime::from_str("application/vnd.smart.teacher").unwrap(), compressible: false });
-        x.insert(Ascii::new("tei"), MimeRecord { mime: Mime::from_str("application/tei+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("teicorpus"), MimeRecord { mime: Mime::from_str("application/tei+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("tex"), MimeRecord { mime: Mime::from_str("application/x-tex").unwrap(), compressible: false });
-        x.insert(Ascii::new("texi"), MimeRecord { mime: Mime::from_str("application/x-texinfo").unwrap(), compressible: false });
-        x.insert(Ascii::new("texinfo"), MimeRecord { mime: Mime::from_str("application/x-texinfo").unwrap(), compressible: false });
-        x.insert(Ascii::new("text"), MimeRecord { mime: Mime::from_str("text/plain").unwrap(), compressible: true });
-        x.insert(Ascii::new("tfi"), MimeRecord { mime: Mime::from_str("application/thraud+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("tfm"), MimeRecord { mime: Mime::from_str("application/x-tex-tfm").unwrap(), compressible: false });
-        x.insert(Ascii::new("tga"), MimeRecord { mime: Mime::from_str("image/x-tga").unwrap(), compressible: false });
-        x.insert(Ascii::new("thmx"), MimeRecord { mime: Mime::from_str("application/vnd.ms-officetheme").unwrap(), compressible: false });
-        x.insert(Ascii::new("tif"), MimeRecord { mime: Mime::from_str("image/tiff").unwrap(), compressible: false });
-        x.insert(Ascii::new("tiff"), MimeRecord { mime: Mime::from_str("image/tiff").unwrap(), compressible: false });
-        x.insert(Ascii::new("tk"), MimeRecord { mime: Mime::from_str("application/x-tcl").unwrap(), compressible: false });
-        x.insert(Ascii::new("tmo"), MimeRecord { mime: Mime::from_str("application/vnd.tmobile-livetv").unwrap(), compressible: false });
-        x.insert(Ascii::new("torrent"), MimeRecord { mime: Mime::from_str("application/x-bittorrent").unwrap(), compressible: false });
-        x.insert(Ascii::new("tpl"), MimeRecord { mime: Mime::from_str("application/vnd.groove-tool-template").unwrap(), compressible: false });
-        x.insert(Ascii::new("tpt"), MimeRecord { mime: Mime::from_str("application/vnd.trid.tpt").unwrap(), compressible: false });
-        x.insert(Ascii::new("tr"), MimeRecord { mime: Mime::from_str("text/troff").unwrap(), compressible: false });
-        x.insert(Ascii::new("tra"), MimeRecord { mime: Mime::from_str("application/vnd.trueapp").unwrap(), compressible: false });
-        x.insert(Ascii::new("trm"), MimeRecord { mime: Mime::from_str("application/x-msterminal").unwrap(), compressible: false });
-        x.insert(Ascii::new("ts"), MimeRecord { mime: Mime::from_str("video/mp2t").unwrap(), compressible: false });
-        x.insert(Ascii::new("tsd"), MimeRecord { mime: Mime::from_str("application/timestamped-data").unwrap(), compressible: false });
-        x.insert(Ascii::new("tsv"), MimeRecord { mime: Mime::from_str("text/tab-separated-values").unwrap(), compressible: true });
-        x.insert(Ascii::new("ttc"), MimeRecord { mime: Mime::from_str("font/collection").unwrap(), compressible: false });
-        x.insert(Ascii::new("ttf"), MimeRecord { mime: Mime::from_str("font/ttf").unwrap(), compressible: false });
-        x.insert(Ascii::new("ttl"), MimeRecord { mime: Mime::from_str("text/turtle").unwrap(), compressible: false });
-        x.insert(Ascii::new("twd"), MimeRecord { mime: Mime::from_str("application/vnd.simtech-mindmapper").unwrap(), compressible: false });
-        x.insert(Ascii::new("twds"), MimeRecord { mime: Mime::from_str("application/vnd.simtech-mindmapper").unwrap(), compressible: false });
-        x.insert(Ascii::new("txd"), MimeRecord { mime: Mime::from_str("application/vnd.genomatix.tuxedo").unwrap(), compressible: false });
-        x.insert(Ascii::new("txf"), MimeRecord { mime: Mime::from_str("application/vnd.mobius.txf").unwrap(), compressible: false });
-        x.insert(Ascii::new("txt"), MimeRecord { mime: Mime::from_str("text/plain").unwrap(), compressible: true });
-        x.insert(Ascii::new("u32"), MimeRecord { mime: Mime::from_str("application/x-authorware-bin").unwrap(), compressible: false });
-        x.insert(Ascii::new("udeb"), MimeRecord { mime: Mime::from_str("application/x-debian-package").unwrap(), compressible: false });
-        x.insert(Ascii::new("ufd"), MimeRecord { mime: Mime::from_str("application/vnd.ufdl").unwrap(), compressible: false });
-        x.insert(Ascii::new("ufdl"), MimeRecord { mime: Mime::from_str("application/vnd.ufdl").unwrap(), compressible: false });
-        x.insert(Ascii::new("ulx"), MimeRecord { mime: Mime::from_str("application/x-glulx").unwrap(), compressible: false });
-        x.insert(Ascii::new("umj"), MimeRecord { mime: Mime::from_str("application/vnd.umajin").unwrap(), compressible: false });
-        x.insert(Ascii::new("unityweb"), MimeRecord { mime: Mime::from_str("application/vnd.unity").unwrap(), compressible: false });
-        x.insert(Ascii::new("uoml"), MimeRecord { mime: Mime::from_str("application/vnd.uoml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("uri"), MimeRecord { mime: Mime::from_str("text/uri-list").unwrap(), compressible: true });
-        x.insert(Ascii::new("uris"), MimeRecord { mime: Mime::from_str("text/uri-list").unwrap(), compressible: true });
-        x.insert(Ascii::new("urls"), MimeRecord { mime: Mime::from_str("text/uri-list").unwrap(), compressible: true });
-        x.insert(Ascii::new("ustar"), MimeRecord { mime: Mime::from_str("application/x-ustar").unwrap(), compressible: false });
-        x.insert(Ascii::new("utz"), MimeRecord { mime: Mime::from_str("application/vnd.uiq.theme").unwrap(), compressible: false });
-        x.insert(Ascii::new("uu"), MimeRecord { mime: Mime::from_str("text/x-uuencode").unwrap(), compressible: false });
-        x.insert(Ascii::new("uva"), MimeRecord { mime: Mime::from_str("audio/vnd.dece.audio").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvd"), MimeRecord { mime: Mime::from_str("application/vnd.dece.data").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvf"), MimeRecord { mime: Mime::from_str("application/vnd.dece.data").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvg"), MimeRecord { mime: Mime::from_str("image/vnd.dece.graphic").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvh"), MimeRecord { mime: Mime::from_str("video/vnd.dece.hd").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvi"), MimeRecord { mime: Mime::from_str("image/vnd.dece.graphic").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvm"), MimeRecord { mime: Mime::from_str("video/vnd.dece.mobile").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvp"), MimeRecord { mime: Mime::from_str("video/vnd.dece.pd").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvs"), MimeRecord { mime: Mime::from_str("video/vnd.dece.sd").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvt"), MimeRecord { mime: Mime::from_str("application/vnd.dece.ttml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvu"), MimeRecord { mime: Mime::from_str("video/vnd.uvvu.mp4").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvv"), MimeRecord { mime: Mime::from_str("video/vnd.dece.video").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvva"), MimeRecord { mime: Mime::from_str("audio/vnd.dece.audio").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvvd"), MimeRecord { mime: Mime::from_str("application/vnd.dece.data").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvvf"), MimeRecord { mime: Mime::from_str("application/vnd.dece.data").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvvg"), MimeRecord { mime: Mime::from_str("image/vnd.dece.graphic").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvvh"), MimeRecord { mime: Mime::from_str("video/vnd.dece.hd").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvvi"), MimeRecord { mime: Mime::from_str("image/vnd.dece.graphic").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvvm"), MimeRecord { mime: Mime::from_str("video/vnd.dece.mobile").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvvp"), MimeRecord { mime: Mime::from_str("video/vnd.dece.pd").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvvs"), MimeRecord { mime: Mime::from_str("video/vnd.dece.sd").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvvt"), MimeRecord { mime: Mime::from_str("application/vnd.dece.ttml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvvu"), MimeRecord { mime: Mime::from_str("video/vnd.uvvu.mp4").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvvv"), MimeRecord { mime: Mime::from_str("video/vnd.dece.video").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvvx"), MimeRecord { mime: Mime::from_str("application/vnd.dece.unspecified").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvvz"), MimeRecord { mime: Mime::from_str("application/vnd.dece.zip").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvx"), MimeRecord { mime: Mime::from_str("application/vnd.dece.unspecified").unwrap(), compressible: false });
-        x.insert(Ascii::new("uvz"), MimeRecord { mime: Mime::from_str("application/vnd.dece.zip").unwrap(), compressible: false });
-        x.insert(Ascii::new("vbox"), MimeRecord { mime: Mime::from_str("application/x-virtualbox-vbox").unwrap(), compressible: true });
-        x.insert(Ascii::new("vbox-extpack"), MimeRecord { mime: Mime::from_str("application/x-virtualbox-vbox-extpack").unwrap(), compressible: false });
-        x.insert(Ascii::new("vcard"), MimeRecord { mime: Mime::from_str("text/vcard").unwrap(), compressible: true });
-        x.insert(Ascii::new("vcd"), MimeRecord { mime: Mime::from_str("application/x-cdlink").unwrap(), compressible: false });
-        x.insert(Ascii::new("vcf"), MimeRecord { mime: Mime::from_str("text/x-vcard").unwrap(), compressible: false });
-        x.insert(Ascii::new("vcg"), MimeRecord { mime: Mime::from_str("application/vnd.groove-vcard").unwrap(), compressible: false });
-        x.insert(Ascii::new("vcs"), MimeRecord { mime: Mime::from_str("text/x-vcalendar").unwrap(), compressible: false });
-        x.insert(Ascii::new("vcx"), MimeRecord { mime: Mime::from_str("application/vnd.vcx").unwrap(), compressible: false });
-        x.insert(Ascii::new("vdi"), MimeRecord { mime: Mime::from_str("application/x-virtualbox-vdi").unwrap(), compressible: true });
-        x.insert(Ascii::new("vhd"), MimeRecord { mime: Mime::from_str("application/x-virtualbox-vhd").unwrap(), compressible: true });
-        x.insert(Ascii::new("vis"), MimeRecord { mime: Mime::from_str("application/vnd.visionary").unwrap(), compressible: false });
-        x.insert(Ascii::new("viv"), MimeRecord { mime: Mime::from_str("video/vnd.vivo").unwrap(), compressible: false });
-        x.insert(Ascii::new("vmdk"), MimeRecord { mime: Mime::from_str("application/x-virtualbox-vmdk").unwrap(), compressible: true });
-        x.insert(Ascii::new("vob"), MimeRecord { mime: Mime::from_str("video/x-ms-vob").unwrap(), compressible: false });
-        x.insert(Ascii::new("vor"), MimeRecord { mime: Mime::from_str("application/vnd.stardivision.writer").unwrap(), compressible: false });
-        x.insert(Ascii::new("vox"), MimeRecord { mime: Mime::from_str("application/x-authorware-bin").unwrap(), compressible: false });
-        x.insert(Ascii::new("vrml"), MimeRecord { mime: Mime::from_str("model/vrml").unwrap(), compressible: false });
-        x.insert(Ascii::new("vsd"), MimeRecord { mime: Mime::from_str("application/vnd.visio").unwrap(), compressible: false });
-        x.insert(Ascii::new("vsf"), MimeRecord { mime: Mime::from_str("application/vnd.vsf").unwrap(), compressible: false });
-        x.insert(Ascii::new("vss"), MimeRecord { mime: Mime::from_str("application/vnd.visio").unwrap(), compressible: false });
-        x.insert(Ascii::new("vst"), MimeRecord { mime: Mime::from_str("application/vnd.visio").unwrap(), compressible: false });
-        x.insert(Ascii::new("vsw"), MimeRecord { mime: Mime::from_str("application/vnd.visio").unwrap(), compressible: false });
-        x.insert(Ascii::new("vtt"), MimeRecord { mime: Mime::from_str("text/vtt; charset=utf-8").unwrap(), compressible: true });
-        x.insert(Ascii::new("vtu"), MimeRecord { mime: Mime::from_str("model/vnd.vtu").unwrap(), compressible: false });
-        x.insert(Ascii::new("vxml"), MimeRecord { mime: Mime::from_str("application/voicexml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("w3d"), MimeRecord { mime: Mime::from_str("application/x-director").unwrap(), compressible: false });
-        x.insert(Ascii::new("wad"), MimeRecord { mime: Mime::from_str("application/x-doom").unwrap(), compressible: false });
-        x.insert(Ascii::new("wadl"), MimeRecord { mime: Mime::from_str("application/vnd.sun.wadl+xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("war"), MimeRecord { mime: Mime::from_str("application/java-archive").unwrap(), compressible: false });
-        x.insert(Ascii::new("wasm"), MimeRecord { mime: Mime::from_str("application/wasm").unwrap(), compressible: true });
-        x.insert(Ascii::new("wav"), MimeRecord { mime: Mime::from_str("audio/wave").unwrap(), compressible: false });
-        x.insert(Ascii::new("wax"), MimeRecord { mime: Mime::from_str("audio/x-ms-wax").unwrap(), compressible: false });
-        x.insert(Ascii::new("wbmp"), MimeRecord { mime: Mime::from_str("image/vnd.wap.wbmp").unwrap(), compressible: false });
-        x.insert(Ascii::new("wbs"), MimeRecord { mime: Mime::from_str("application/vnd.criticaltools.wbs+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("wbxml"), MimeRecord { mime: Mime::from_str("application/vnd.wap.wbxml").unwrap(), compressible: false });
-        x.insert(Ascii::new("wcm"), MimeRecord { mime: Mime::from_str("application/vnd.ms-works").unwrap(), compressible: false });
-        x.insert(Ascii::new("wdb"), MimeRecord { mime: Mime::from_str("application/vnd.ms-works").unwrap(), compressible: false });
-        x.insert(Ascii::new("wdp"), MimeRecord { mime: Mime::from_str("image/vnd.ms-photo").unwrap(), compressible: false });
-        x.insert(Ascii::new("weba"), MimeRecord { mime: Mime::from_str("audio/webm").unwrap(), compressible: false });
-        x.insert(Ascii::new("webapp"), MimeRecord { mime: Mime::from_str("application/x-web-app-manifest+json").unwrap(), compressible: true });
-        x.insert(Ascii::new("webm"), MimeRecord { mime: Mime::from_str("video/webm").unwrap(), compressible: false });
-        x.insert(Ascii::new("webmanifest"), MimeRecord { mime: Mime::from_str("application/manifest+json; charset=utf-8").unwrap(), compressible: true });
-        x.insert(Ascii::new("webp"), MimeRecord { mime: Mime::from_str("image/webp").unwrap(), compressible: false });
-        x.insert(Ascii::new("wg"), MimeRecord { mime: Mime::from_str("application/vnd.pmi.widget").unwrap(), compressible: false });
-        x.insert(Ascii::new("wgt"), MimeRecord { mime: Mime::from_str("application/widget").unwrap(), compressible: false });
-        x.insert(Ascii::new("wks"), MimeRecord { mime: Mime::from_str("application/vnd.ms-works").unwrap(), compressible: false });
-        x.insert(Ascii::new("wm"), MimeRecord { mime: Mime::from_str("video/x-ms-wm").unwrap(), compressible: false });
-        x.insert(Ascii::new("wma"), MimeRecord { mime: Mime::from_str("audio/x-ms-wma").unwrap(), compressible: false });
-        x.insert(Ascii::new("wmd"), MimeRecord { mime: Mime::from_str("application/x-ms-wmd").unwrap(), compressible: false });
-        x.insert(Ascii::new("wmf"), MimeRecord { mime: Mime::from_str("application/x-msmetafile").unwrap(), compressible: false });
-        x.insert(Ascii::new("wml"), MimeRecord { mime: Mime::from_str("text/vnd.wap.wml").unwrap(), compressible: false });
-        x.insert(Ascii::new("wmlc"), MimeRecord { mime: Mime::from_str("application/vnd.wap.wmlc").unwrap(), compressible: false });
-        x.insert(Ascii::new("wmls"), MimeRecord { mime: Mime::from_str("text/vnd.wap.wmlscript").unwrap(), compressible: false });
-        x.insert(Ascii::new("wmlsc"), MimeRecord { mime: Mime::from_str("application/vnd.wap.wmlscriptc").unwrap(), compressible: false });
-        x.insert(Ascii::new("wmv"), MimeRecord { mime: Mime::from_str("video/x-ms-wmv").unwrap(), compressible: false });
-        x.insert(Ascii::new("wmx"), MimeRecord { mime: Mime::from_str("video/x-ms-wmx").unwrap(), compressible: false });
-        x.insert(Ascii::new("wmz"), MimeRecord { mime: Mime::from_str("application/x-ms-wmz").unwrap(), compressible: false });
-        x.insert(Ascii::new("woff"), MimeRecord { mime: Mime::from_str("application/font-woff").unwrap(), compressible: false });
-        x.insert(Ascii::new("woff2"), MimeRecord { mime: Mime::from_str("font/woff2").unwrap(), compressible: false });
-        x.insert(Ascii::new("wpd"), MimeRecord { mime: Mime::from_str("application/vnd.wordperfect").unwrap(), compressible: false });
-        x.insert(Ascii::new("wpl"), MimeRecord { mime: Mime::from_str("application/vnd.ms-wpl").unwrap(), compressible: false });
-        x.insert(Ascii::new("wps"), MimeRecord { mime: Mime::from_str("application/vnd.ms-works").unwrap(), compressible: false });
-        x.insert(Ascii::new("wqd"), MimeRecord { mime: Mime::from_str("application/vnd.wqd").unwrap(), compressible: false });
-        x.insert(Ascii::new("wri"), MimeRecord { mime: Mime::from_str("application/x-mswrite").unwrap(), compressible: false });
-        x.insert(Ascii::new("wrl"), MimeRecord { mime: Mime::from_str("model/vrml").unwrap(), compressible: false });
-        x.insert(Ascii::new("wsdl"), MimeRecord { mime: Mime::from_str("application/wsdl+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("wspolicy"), MimeRecord { mime: Mime::from_str("application/wspolicy+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("wtb"), MimeRecord { mime: Mime::from_str("application/vnd.webturbo").unwrap(), compressible: false });
-        x.insert(Ascii::new("wvx"), MimeRecord { mime: Mime::from_str("video/x-ms-wvx").unwrap(), compressible: false });
-        x.insert(Ascii::new("x32"), MimeRecord { mime: Mime::from_str("application/x-authorware-bin").unwrap(), compressible: false });
-        x.insert(Ascii::new("x3d"), MimeRecord { mime: Mime::from_str("model/x3d+xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("x3db"), MimeRecord { mime: Mime::from_str("model/x3d+binary").unwrap(), compressible: false });
-        x.insert(Ascii::new("x3dbz"), MimeRecord { mime: Mime::from_str("model/x3d+binary").unwrap(), compressible: false });
-        x.insert(Ascii::new("x3dv"), MimeRecord { mime: Mime::from_str("model/x3d+vrml").unwrap(), compressible: false });
-        x.insert(Ascii::new("x3dvz"), MimeRecord { mime: Mime::from_str("model/x3d+vrml").unwrap(), compressible: false });
-        x.insert(Ascii::new("x3dz"), MimeRecord { mime: Mime::from_str("model/x3d+xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("xaml"), MimeRecord { mime: Mime::from_str("application/xaml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xap"), MimeRecord { mime: Mime::from_str("application/x-silverlight-app").unwrap(), compressible: false });
-        x.insert(Ascii::new("xar"), MimeRecord { mime: Mime::from_str("application/vnd.xara").unwrap(), compressible: false });
-        x.insert(Ascii::new("xbap"), MimeRecord { mime: Mime::from_str("application/x-ms-xbap").unwrap(), compressible: false });
-        x.insert(Ascii::new("xbd"), MimeRecord { mime: Mime::from_str("application/vnd.fujixerox.docuworks.binder").unwrap(), compressible: false });
-        x.insert(Ascii::new("xbm"), MimeRecord { mime: Mime::from_str("image/x-xbitmap").unwrap(), compressible: false });
-        x.insert(Ascii::new("xdf"), MimeRecord { mime: Mime::from_str("application/xcap-diff+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xdm"), MimeRecord { mime: Mime::from_str("application/vnd.syncml.dm+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xdp"), MimeRecord { mime: Mime::from_str("application/vnd.adobe.xdp+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xdssc"), MimeRecord { mime: Mime::from_str("application/dssc+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xdw"), MimeRecord { mime: Mime::from_str("application/vnd.fujixerox.docuworks").unwrap(), compressible: false });
-        x.insert(Ascii::new("xenc"), MimeRecord { mime: Mime::from_str("application/xenc+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xer"), MimeRecord { mime: Mime::from_str("application/patch-ops-error+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xfdf"), MimeRecord { mime: Mime::from_str("application/vnd.adobe.xfdf").unwrap(), compressible: false });
-        x.insert(Ascii::new("xfdl"), MimeRecord { mime: Mime::from_str("application/vnd.xfdl").unwrap(), compressible: false });
-        x.insert(Ascii::new("xht"), MimeRecord { mime: Mime::from_str("application/xhtml+xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("xhtml"), MimeRecord { mime: Mime::from_str("application/xhtml+xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("xhvml"), MimeRecord { mime: Mime::from_str("application/xv+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xif"), MimeRecord { mime: Mime::from_str("image/vnd.xiff").unwrap(), compressible: false });
-        x.insert(Ascii::new("xla"), MimeRecord { mime: Mime::from_str("application/vnd.ms-excel").unwrap(), compressible: false });
-        x.insert(Ascii::new("xlam"), MimeRecord { mime: Mime::from_str("application/vnd.ms-excel.addin.macroenabled.12").unwrap(), compressible: false });
-        x.insert(Ascii::new("xlc"), MimeRecord { mime: Mime::from_str("application/vnd.ms-excel").unwrap(), compressible: false });
-        x.insert(Ascii::new("xlf"), MimeRecord { mime: Mime::from_str("application/x-xliff+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xlm"), MimeRecord { mime: Mime::from_str("application/vnd.ms-excel").unwrap(), compressible: false });
-        x.insert(Ascii::new("xls"), MimeRecord { mime: Mime::from_str("application/vnd.ms-excel").unwrap(), compressible: false });
-        x.insert(Ascii::new("xlsb"), MimeRecord { mime: Mime::from_str("application/vnd.ms-excel.sheet.binary.macroenabled.12").unwrap(), compressible: false });
-        x.insert(Ascii::new("xlsm"), MimeRecord { mime: Mime::from_str("application/vnd.ms-excel.sheet.macroenabled.12").unwrap(), compressible: false });
-        x.insert(Ascii::new("xlsx"), MimeRecord { mime: Mime::from_str("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet").unwrap(), compressible: false });
-        x.insert(Ascii::new("xlt"), MimeRecord { mime: Mime::from_str("application/vnd.ms-excel").unwrap(), compressible: false });
-        x.insert(Ascii::new("xltm"), MimeRecord { mime: Mime::from_str("application/vnd.ms-excel.template.macroenabled.12").unwrap(), compressible: false });
-        x.insert(Ascii::new("xltx"), MimeRecord { mime: Mime::from_str("application/vnd.openxmlformats-officedocument.spreadsheetml.template").unwrap(), compressible: false });
-        x.insert(Ascii::new("xlw"), MimeRecord { mime: Mime::from_str("application/vnd.ms-excel").unwrap(), compressible: false });
-        x.insert(Ascii::new("xm"), MimeRecord { mime: Mime::from_str("audio/xm").unwrap(), compressible: false });
-        x.insert(Ascii::new("xml"), MimeRecord { mime: Mime::from_str("application/xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("xo"), MimeRecord { mime: Mime::from_str("application/vnd.olpc-sugar").unwrap(), compressible: false });
-        x.insert(Ascii::new("xop"), MimeRecord { mime: Mime::from_str("application/xop+xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("xpi"), MimeRecord { mime: Mime::from_str("application/x-xpinstall").unwrap(), compressible: false });
-        x.insert(Ascii::new("xpl"), MimeRecord { mime: Mime::from_str("application/xproc+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xpm"), MimeRecord { mime: Mime::from_str("image/x-xpixmap").unwrap(), compressible: false });
-        x.insert(Ascii::new("xpr"), MimeRecord { mime: Mime::from_str("application/vnd.is-xpr").unwrap(), compressible: false });
-        x.insert(Ascii::new("xps"), MimeRecord { mime: Mime::from_str("application/vnd.ms-xpsdocument").unwrap(), compressible: false });
-        x.insert(Ascii::new("xpw"), MimeRecord { mime: Mime::from_str("application/vnd.intercon.formnet").unwrap(), compressible: false });
-        x.insert(Ascii::new("xpx"), MimeRecord { mime: Mime::from_str("application/vnd.intercon.formnet").unwrap(), compressible: false });
-        x.insert(Ascii::new("xsd"), MimeRecord { mime: Mime::from_str("application/xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("xsl"), MimeRecord { mime: Mime::from_str("application/xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("xslt"), MimeRecord { mime: Mime::from_str("application/xslt+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xsm"), MimeRecord { mime: Mime::from_str("application/vnd.syncml+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xspf"), MimeRecord { mime: Mime::from_str("application/xspf+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xul"), MimeRecord { mime: Mime::from_str("application/vnd.mozilla.xul+xml").unwrap(), compressible: true });
-        x.insert(Ascii::new("xvm"), MimeRecord { mime: Mime::from_str("application/xv+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xvml"), MimeRecord { mime: Mime::from_str("application/xv+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("xwd"), MimeRecord { mime: Mime::from_str("image/x-xwindowdump").unwrap(), compressible: false });
-        x.insert(Ascii::new("xyz"), MimeRecord { mime: Mime::from_str("chemical/x-xyz").unwrap(), compressible: false });
-        x.insert(Ascii::new("xz"), MimeRecord { mime: Mime::from_str("application/x-xz").unwrap(), compressible: false });
-        x.insert(Ascii::new("yaml"), MimeRecord { mime: Mime::from_str("text/yaml").unwrap(), compressible: false });
-        x.insert(Ascii::new("yang"), MimeRecord { mime: Mime::from_str("application/yang").unwrap(), compressible: false });
-        x.insert(Ascii::new("yin"), MimeRecord { mime: Mime::from_str("application/yin+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("yml"), MimeRecord { mime: Mime::from_str("text/yaml").unwrap(), compressible: false });
-        x.insert(Ascii::new("ymp"), MimeRecord { mime: Mime::from_str("text/x-suse-ymp").unwrap(), compressible: true });
-        x.insert(Ascii::new("z1"), MimeRecord { mime: Mime::from_str("application/x-zmachine").unwrap(), compressible: false });
-        x.insert(Ascii::new("z2"), MimeRecord { mime: Mime::from_str("application/x-zmachine").unwrap(), compressible: false });
-        x.insert(Ascii::new("z3"), MimeRecord { mime: Mime::from_str("application/x-zmachine").unwrap(), compressible: false });
-        x.insert(Ascii::new("z4"), MimeRecord { mime: Mime::from_str("application/x-zmachine").unwrap(), compressible: false });
-        x.insert(Ascii::new("z5"), MimeRecord { mime: Mime::from_str("application/x-zmachine").unwrap(), compressible: false });
-        x.insert(Ascii::new("z6"), MimeRecord { mime: Mime::from_str("application/x-zmachine").unwrap(), compressible: false });
-        x.insert(Ascii::new("z7"), MimeRecord { mime: Mime::from_str("application/x-zmachine").unwrap(), compressible: false });
-        x.insert(Ascii::new("z8"), MimeRecord { mime: Mime::from_str("application/x-zmachine").unwrap(), compressible: false });
-        x.insert(Ascii::new("zaz"), MimeRecord { mime: Mime::from_str("application/vnd.zzazz.deck+xml").unwrap(), compressible: false });
-        x.insert(Ascii::new("zip"), MimeRecord { mime: Mime::from_str("application/zip").unwrap(), compressible: false });
-        x.insert(Ascii::new("zir"), MimeRecord { mime: Mime::from_str("application/vnd.zul").unwrap(), compressible: false });
-        x.insert(Ascii::new("zirz"), MimeRecord { mime: Mime::from_str("application/vnd.zul").unwrap(), compressible: false });
-        x.insert(Ascii::new("zmm"), MimeRecord { mime: Mime::from_str("application/vnd.handheld-entertainment+xml").unwrap(), compressible: false });
-        x
+        mimes![
+            // Added by me
+            ("toml", "text/plain", true),
+
+            ("123", "application/vnd.lotus-1-2-3", false),
+            ("3dml", "text/vnd.in3d.3dml", false),
+            ("3ds", "image/x-3ds", false),
+            ("3g2", "video/3gpp2", false),
+            ("3gp", "video/3gpp", false),
+            ("3gpp", "video/3gpp", false),
+            ("7z", "application/x-7z-compressed", false),
+            ("aab", "application/x-authorware-bin", false),
+            ("aac", "audio/x-aac", false),
+            ("aam", "application/x-authorware-map", false),
+            ("aas", "application/x-authorware-seg", false),
+            ("abw", "application/x-abiword", false),
+            ("ac", "application/pkix-attr-cert", false),
+            ("acc", "application/vnd.americandynamics.acc", false),
+            ("ace", "application/x-ace-compressed", false),
+            ("acu", "application/vnd.acucobol", false),
+            ("acutc", "application/vnd.acucorp", false),
+            ("adp", "audio/adpcm", false),
+            ("aep", "application/vnd.audiograph", false),
+            ("afm", "application/x-font-type1", false),
+            ("afp", "application/vnd.ibm.modcap", false),
+            ("ahead", "application/vnd.ahead.space", false),
+            ("ai", "application/postscript", true),
+            ("aif", "audio/x-aiff", false),
+            ("aifc", "audio/x-aiff", false),
+            ("aiff", "audio/x-aiff", false),
+            ("air", "application/vnd.adobe.air-application-installer-package+zip", false),
+            ("ait", "application/vnd.dvb.ait", false),
+            ("ami", "application/vnd.amiga.ami", false),
+            ("apk", "application/vnd.android.package-archive", false),
+            ("apng", "image/apng", false),
+            ("appcache", "text/cache-manifest", true),
+            ("application", "application/x-ms-application", false),
+            ("apr", "application/vnd.lotus-approach", false),
+            ("arc", "application/x-freearc", false),
+            ("arj", "application/x-arj", false),
+            ("asc", "application/pgp-signature", false),
+            ("asf", "video/x-ms-asf", false),
+            ("asm", "text/x-asm", false),
+            ("aso", "application/vnd.accpac.simply.aso", false),
+            ("asx", "video/x-ms-asf", false),
+            ("atc", "application/vnd.acucorp", false),
+            ("atom", "application/atom+xml", true),
+            ("atomcat", "application/atomcat+xml", false),
+            ("atomsvc", "application/atomsvc+xml", false),
+            ("atx", "application/vnd.antix.game-component", false),
+            ("au", "audio/basic", false),
+            ("avi", "video/x-msvideo", false),
+            ("aw", "application/applixware", false),
+            ("azf", "application/vnd.airzip.filesecure.azf", false),
+            ("azs", "application/vnd.airzip.filesecure.azs", false),
+            ("azw", "application/vnd.amazon.ebook", false),
+            ("bat", "application/x-msdownload", false),
+            ("bcpio", "application/x-bcpio", false),
+            ("bdf", "application/x-font-bdf", false),
+            ("bdm", "application/vnd.syncml.dm+wbxml", false),
+            ("bdoc", "application/bdoc", false),
+            ("bed", "application/vnd.realvnc.bed", false),
+            ("bh2", "application/vnd.fujitsu.oasysprs", false),
+            ("bin", "application/octet-stream", false),
+            ("blb", "application/x-blorb", false),
+            ("blorb", "application/x-blorb", false),
+            ("bmi", "application/vnd.bmi", false),
+            ("bmp", "image/bmp", true),
+            ("book", "application/vnd.framemaker", false),
+            ("box", "application/vnd.previewsystems.box", false),
+            ("boz", "application/x-bzip2", false),
+            ("bpk", "application/octet-stream", false),
+            ("btif", "image/prs.btif", false),
+            ("buffer", "application/octet-stream", false),
+            ("bz", "application/x-bzip", false),
+            ("bz2", "application/x-bzip2", false),
+            ("c", "text/x-c", false),
+            ("c11amc", "application/vnd.cluetrust.cartomobile-config", false),
+            ("c11amz", "application/vnd.cluetrust.cartomobile-config-pkg", false),
+            ("c4d", "application/vnd.clonk.c4group", false),
+            ("c4f", "application/vnd.clonk.c4group", false),
+            ("c4g", "application/vnd.clonk.c4group", false),
+            ("c4p", "application/vnd.clonk.c4group", false),
+            ("c4u", "application/vnd.clonk.c4group", false),
+            ("cab", "application/vnd.ms-cab-compressed", false),
+            ("caf", "audio/x-caf", false),
+            ("cap", "application/vnd.tcpdump.pcap", false),
+            ("car", "application/vnd.curl.car", false),
+            ("cat", "application/vnd.ms-pki.seccat", false),
+            ("cb7", "application/x-cbr", false),
+            ("cba", "application/x-cbr", false),
+            ("cbr", "application/x-cbr", false),
+            ("cbt", "application/x-cbr", false),
+            ("cbz", "application/x-cbr", false),
+            ("cc", "text/x-c", false),
+            ("cco", "application/x-cocoa", false),
+            ("cct", "application/x-director", false),
+            ("ccxml", "application/ccxml+xml", false),
+            ("cdbcmsg", "application/vnd.contact.cmsg", false),
+            ("cdf", "application/x-netcdf", false),
+            ("cdkey", "application/vnd.mediastation.cdkey", false),
+            ("cdmia", "application/cdmi-capability", false),
+            ("cdmic", "application/cdmi-container", false),
+            ("cdmid", "application/cdmi-domain", false),
+            ("cdmio", "application/cdmi-object", false),
+            ("cdmiq", "application/cdmi-queue", false),
+            ("cdx", "chemical/x-cdx", false),
+            ("cdxml", "application/vnd.chemdraw+xml", false),
+            ("cdy", "application/vnd.cinderella", false),
+            ("cer", "application/pkix-cert", false),
+            ("cfs", "application/x-cfs-compressed", false),
+            ("cgm", "image/cgm", false),
+            ("chat", "application/x-chat", false),
+            ("chm", "application/vnd.ms-htmlhelp", false),
+            ("chrt", "application/vnd.kde.kchart", false),
+            ("cif", "chemical/x-cif", false),
+            ("cii", "application/vnd.anser-web-certificate-issue-initiation", false),
+            ("cil", "application/vnd.ms-artgalry", false),
+            ("cla", "application/vnd.claymore", false),
+            ("class", "application/java-vm", false),
+            ("clkk", "application/vnd.crick.clicker.keyboard", false),
+            ("clkp", "application/vnd.crick.clicker.palette", false),
+            ("clkt", "application/vnd.crick.clicker.template", false),
+            ("clkw", "application/vnd.crick.clicker.wordbank", false),
+            ("clkx", "application/vnd.crick.clicker", false),
+            ("clp", "application/x-msclip", false),
+            ("cmc", "application/vnd.cosmocaller", false),
+            ("cmdf", "chemical/x-cmdf", false),
+            ("cml", "chemical/x-cml", false),
+            ("cmp", "application/vnd.yellowriver-custom-menu", false),
+            ("cmx", "image/x-cmx", false),
+            ("cod", "application/vnd.rim.cod", false),
+            ("coffee", "text/coffeescript", false),
+            ("com", "application/x-msdownload", false),
+            ("conf", "text/plain", true),
+            ("cpio", "application/x-cpio", false),
+            ("cpp", "text/x-c", false),
+            ("cpt", "application/mac-compactpro", false),
+            ("crd", "application/x-mscardfile", false),
+            ("crl", "application/pkix-crl", false),
+            ("crt", "application/x-x509-ca-cert", false),
+            ("crx", "application/x-chrome-extension", false),
+            ("cryptonote", "application/vnd.rig.cryptonote", false),
+            ("csh", "application/x-csh", false),
+            ("csml", "chemical/x-csml", false),
+            ("csp", "application/vnd.commonspace", false),
+            ("css", "text/css; charset=utf-8", true),
+            ("cst", "application/x-director", false),
+            ("csv", "text/csv", true),
+            ("cu", "application/cu-seeme", false),
+            ("curl", "text/vnd.curl", false),
+            ("cww", "application/prs.cww", false),
+            ("cxt", "application/x-director", false),
+            ("cxx", "text/x-c", false),
+            ("dae", "model/vnd.collada+xml", false),
+            ("daf", "application/vnd.mobius.daf", false),
+            ("dart", "application/vnd.dart", true),
+            ("dataless", "application/vnd.fdsn.seed", false),
+            ("davmount", "application/davmount+xml", false),
+            ("dbk", "application/docbook+xml", false),
+            ("dcr", "application/x-director", false),
+            ("dcurl", "text/vnd.curl.dcurl", false),
+            ("dd2", "application/vnd.oma.dd2+xml", false),
+            ("ddd", "application/vnd.fujixerox.ddd", false),
+            ("deb", "application/x-debian-package", false),
+            ("def", "text/plain", true),
+            ("deploy", "application/octet-stream", false),
+            ("der", "application/x-x509-ca-cert", false),
+            ("dfac", "application/vnd.dreamfactory", false),
+            ("dgc", "application/x-dgc-compressed", false),
+            ("dic", "text/x-c", false),
+            ("dir", "application/x-director", false),
+            ("dis", "application/vnd.mobius.dis", false),
+            ("dist", "application/octet-stream", false),
+            ("distz", "application/octet-stream", false),
+            ("djv", "image/vnd.djvu", false),
+            ("djvu", "image/vnd.djvu", false),
+            ("dll", "application/x-msdownload", false),
+            ("dmg", "application/x-apple-diskimage", false),
+            ("dmp", "application/vnd.tcpdump.pcap", false),
+            ("dms", "application/octet-stream", false),
+            ("dna", "application/vnd.dna", false),
+            ("doc", "application/msword", false),
+            ("docm", "application/vnd.ms-word.document.macroenabled.12", false),
+            ("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", false),
+            ("dot", "application/msword", false),
+            ("dotm", "application/vnd.ms-word.template.macroenabled.12", false),
+            ("dotx", "application/vnd.openxmlformats-officedocument.wordprocessingml.template", false),
+            ("dp", "application/vnd.osgi.dp", false),
+            ("dpg", "application/vnd.dpgraph", false),
+            ("dra", "audio/vnd.dra", false),
+            ("dsc", "text/prs.lines.tag", false),
+            ("dssc", "application/dssc+der", false),
+            ("dtb", "application/x-dtbook+xml", false),
+            ("dtd", "application/xml-dtd", true),
+            ("dts", "audio/vnd.dts", false),
+            ("dtshd", "audio/vnd.dts.hd", false),
+            ("dump", "application/octet-stream", false),
+            ("dvb", "video/vnd.dvb.file", false),
+            ("dvi", "application/x-dvi", false),
+            ("dwf", "model/vnd.dwf", false),
+            ("dwg", "image/vnd.dwg", false),
+            ("dxf", "image/vnd.dxf", false),
+            ("dxp", "application/vnd.spotfire.dxp", false),
+            ("dxr", "application/x-director", false),
+            ("ear", "application/java-archive", false),
+            ("ecelp4800", "audio/vnd.nuera.ecelp4800", false),
+            ("ecelp7470", "audio/vnd.nuera.ecelp7470", false),
+            ("ecelp9600", "audio/vnd.nuera.ecelp9600", false),
+            ("ecma", "application/ecmascript", true),
+            ("edm", "application/vnd.novadigm.edm", false),
+            ("edx", "application/vnd.novadigm.edx", false),
+            ("efif", "application/vnd.picsel", false),
+            ("ei6", "application/vnd.pg.osasli", false),
+            ("elc", "application/octet-stream", false),
+            ("emf", "application/x-msmetafile", false),
+            ("eml", "message/rfc822", true),
+            ("emma", "application/emma+xml", false),
+            ("emz", "application/x-msmetafile", false),
+            ("eol", "audio/vnd.digital-winds", false),
+            ("eot", "application/vnd.ms-fontobject", true),
+            ("eps", "application/postscript", true),
+            ("epub", "application/epub+zip", false),
+            ("es3", "application/vnd.eszigno3+xml", false),
+            ("esa", "application/vnd.osgi.subsystem", false),
+            ("esf", "application/vnd.epson.esf", false),
+            ("et3", "application/vnd.eszigno3+xml", false),
+            ("etx", "text/x-setext", false),
+            ("eva", "application/x-eva", false),
+            ("evy", "application/x-envoy", false),
+            ("exe", "application/x-msdos-program", false),
+            ("exi", "application/exi", false),
+            ("ext", "application/vnd.novadigm.ext", false),
+            ("ez", "application/andrew-inset", false),
+            ("ez2", "application/vnd.ezpix-album", false),
+            ("ez3", "application/vnd.ezpix-package", false),
+            ("f", "text/x-fortran", false),
+            ("f4v", "video/x-f4v", false),
+            ("f77", "text/x-fortran", false),
+            ("f90", "text/x-fortran", false),
+            ("fbs", "image/vnd.fastbidsheet", false),
+            ("fcdt", "application/vnd.adobe.formscentral.fcdt", false),
+            ("fcs", "application/vnd.isac.fcs", false),
+            ("fdf", "application/vnd.fdf", false),
+            ("fe_launch", "application/vnd.denovo.fcselayout-link", false),
+            ("fg5", "application/vnd.fujitsu.oasysgp", false),
+            ("fgd", "application/x-director", false),
+            ("fh", "image/x-freehand", false),
+            ("fh4", "image/x-freehand", false),
+            ("fh5", "image/x-freehand", false),
+            ("fh7", "image/x-freehand", false),
+            ("fhc", "image/x-freehand", false),
+            ("fig", "application/x-xfig", false),
+            ("flac", "audio/x-flac", false),
+            ("fli", "video/x-fli", false),
+            ("flo", "application/vnd.micrografx.flo", false),
+            ("flv", "video/x-flv", false),
+            ("flw", "application/vnd.kde.kivio", false),
+            ("flx", "text/vnd.fmi.flexstor", false),
+            ("fly", "text/vnd.fly", false),
+            ("fm", "application/vnd.framemaker", false),
+            ("fnc", "application/vnd.frogans.fnc", false),
+            ("for", "text/x-fortran", false),
+            ("fpx", "image/vnd.fpx", false),
+            ("frame", "application/vnd.framemaker", false),
+            ("fsc", "application/vnd.fsc.weblaunch", false),
+            ("fst", "image/vnd.fst", false),
+            ("ftc", "application/vnd.fluxtime.clip", false),
+            ("fti", "application/vnd.anser-web-funds-transfer-initiation", false),
+            ("fvt", "video/vnd.fvt", false),
+            ("fxp", "application/vnd.adobe.fxp", false),
+            ("fxpl", "application/vnd.adobe.fxp", false),
+            ("fzs", "application/vnd.fuzzysheet", false),
+            ("g2w", "application/vnd.geoplan", false),
+            ("g3", "image/g3fax", false),
+            ("g3w", "application/vnd.geospace", false),
+            ("gac", "application/vnd.groove-account", false),
+            ("gam", "application/x-tads", false),
+            ("gbr", "application/rpki-ghostbusters", false),
+            ("gca", "application/x-gca-compressed", false),
+            ("gdl", "model/vnd.gdl", false),
+            ("gdoc", "application/vnd.google-apps.document", false),
+            ("geo", "application/vnd.dynageo", false),
+            ("geojson", "application/geo+json", true),
+            ("gex", "application/vnd.geometry-explorer", false),
+            ("ggb", "application/vnd.geogebra.file", false),
+            ("ggt", "application/vnd.geogebra.tool", false),
+            ("ghf", "application/vnd.groove-help", false),
+            ("gif", "image/gif", false),
+            ("gim", "application/vnd.groove-identity-message", false),
+            ("glb", "model/gltf-binary", true),
+            ("gltf", "model/gltf+json", true),
+            ("gml", "application/gml+xml", false),
+            ("gmx", "application/vnd.gmx", false),
+            ("gnumeric", "application/x-gnumeric", false),
+            ("gph", "application/vnd.flographit", false),
+            ("gpx", "application/gpx+xml", false),
+            ("gqf", "application/vnd.grafeq", false),
+            ("gqs", "application/vnd.grafeq", false),
+            ("gram", "application/srgs", false),
+            ("gramps", "application/x-gramps-xml", false),
+            ("gre", "application/vnd.geometry-explorer", false),
+            ("grv", "application/vnd.groove-injector", false),
+            ("grxml", "application/srgs+xml", false),
+            ("gsf", "application/x-font-ghostscript", false),
+            ("gsheet", "application/vnd.google-apps.spreadsheet", false),
+            ("gslides", "application/vnd.google-apps.presentation", false),
+            ("gtar", "application/x-gtar", false),
+            ("gtm", "application/vnd.groove-tool-message", false),
+            ("gtw", "model/vnd.gtw", false),
+            ("gv", "text/vnd.graphviz", false),
+            ("gxf", "application/gxf", false),
+            ("gxt", "application/vnd.geonext", false),
+            ("gz", "application/gzip", false),
+            ("h", "text/x-c", false),
+            ("h261", "video/h261", false),
+            ("h263", "video/h263", false),
+            ("h264", "video/h264", false),
+            ("hal", "application/vnd.hal+xml", false),
+            ("hbci", "application/vnd.hbci", false),
+            ("hbs", "text/x-handlebars-template", false),
+            ("hdd", "application/x-virtualbox-hdd", true),
+            ("hdf", "application/x-hdf", false),
+            ("hh", "text/x-c", false),
+            ("hjson", "application/hjson", false),
+            ("hlp", "application/winhlp", false),
+            ("hpgl", "application/vnd.hp-hpgl", false),
+            ("hpid", "application/vnd.hp-hpid", false),
+            ("hps", "application/vnd.hp-hps", false),
+            ("hqx", "application/mac-binhex40", false),
+            ("htc", "text/x-component", false),
+            ("htke", "application/vnd.kenameaapp", false),
+            ("htm", "text/html", true),
+            ("html", "text/html", true),
+            ("hvd", "application/vnd.yamaha.hv-dic", false),
+            ("hvp", "application/vnd.yamaha.hv-voice", false),
+            ("hvs", "application/vnd.yamaha.hv-script", false),
+            ("i2g", "application/vnd.intergeo", false),
+            ("icc", "application/vnd.iccprofile", false),
+            ("ice", "x-conference/x-cooltalk", false),
+            ("icm", "application/vnd.iccprofile", false),
+            ("ico", "image/x-icon", true),
+            ("ics", "text/calendar", false),
+            ("ief", "image/ief", false),
+            ("ifb", "text/calendar", false),
+            ("ifm", "application/vnd.shana.informed.formdata", false),
+            ("iges", "model/iges", false),
+            ("igl", "application/vnd.igloader", false),
+            ("igm", "application/vnd.insors.igm", false),
+            ("igs", "model/iges", false),
+            ("igx", "application/vnd.micrografx.igx", false),
+            ("iif", "application/vnd.shana.informed.interchange", false),
+            ("img", "application/octet-stream", false),
+            ("imp", "application/vnd.accpac.simply.imp", false),
+            ("ims", "application/vnd.ms-ims", false),
+            ("in", "text/plain", true),
+            ("ini", "text/plain", true),
+            ("ink", "application/inkml+xml", false),
+            ("inkml", "application/inkml+xml", false),
+            ("install", "application/x-install-instructions", false),
+            ("iota", "application/vnd.astraea-software.iota", false),
+            ("ipfix", "application/ipfix", false),
+            ("ipk", "application/vnd.shana.informed.package", false),
+            ("irm", "application/vnd.ibm.rights-management", false),
+            ("irp", "application/vnd.irepository.package+xml", false),
+            ("iso", "application/x-iso9660-image", false),
+            ("itp", "application/vnd.shana.informed.formtemplate", false),
+            ("ivp", "application/vnd.immervision-ivp", false),
+            ("ivu", "application/vnd.immervision-ivu", false),
+            ("jad", "text/vnd.sun.j2me.app-descriptor", false),
+            ("jade", "text/jade", false),
+            ("jam", "application/vnd.jam", false),
+            ("jar", "application/java-archive", false),
+            ("jardiff", "application/x-java-archive-diff", false),
+            ("java", "text/x-java-source", false),
+            ("jisp", "application/vnd.jisp", false),
+            ("jlt", "application/vnd.hp-jlyt", false),
+            ("jng", "image/x-jng", false),
+            ("jnlp", "application/x-java-jnlp-file", false),
+            ("joda", "application/vnd.joost.joda-archive", false),
+            ("jp2", "image/jp2", false),
+            ("jpe", "image/jpeg", false),
+            ("jpeg", "image/jpeg", false),
+            ("jpf", "image/jpx", false),
+            ("jpg", "image/jpeg", false),
+            ("jpg2", "image/jp2", false),
+            ("jpgm", "video/jpm", false),
+            ("jpgv", "video/jpeg", false),
+            ("jpm", "image/jpm", false),
+            ("jpx", "image/jpx", false),
+            ("js", "application/javascript; charset=utf-8", true),
+            ("json", "application/json; charset=utf-8", true),
+            ("json5", "application/json5", false),
+            ("jsonld", "application/ld+json", true),
+            ("jsonml", "application/jsonml+json", true),
+            ("jsx", "text/jsx", true),
+            ("kar", "audio/midi", false),
+            ("karbon", "application/vnd.kde.karbon", false),
+            ("kfo", "application/vnd.kde.kformula", false),
+            ("kia", "application/vnd.kidspiration", false),
+            ("kml", "application/vnd.google-earth.kml+xml", true),
+            ("kmz", "application/vnd.google-earth.kmz", false),
+            ("kne", "application/vnd.kinar", false),
+            ("knp", "application/vnd.kinar", false),
+            ("kon", "application/vnd.kde.kontour", false),
+            ("kpr", "application/vnd.kde.kpresenter", false),
+            ("kpt", "application/vnd.kde.kpresenter", false),
+            ("kpxx", "application/vnd.ds-keypoint", false),
+            ("ksp", "application/vnd.kde.kspread", false),
+            ("ktr", "application/vnd.kahootz", false),
+            ("ktx", "image/ktx", false),
+            ("ktz", "application/vnd.kahootz", false),
+            ("kwd", "application/vnd.kde.kword", false),
+            ("kwt", "application/vnd.kde.kword", false),
+            ("lasxml", "application/vnd.las.las+xml", false),
+            ("latex", "application/x-latex", false),
+            ("lbd", "application/vnd.llamagraphics.life-balance.desktop", false),
+            ("lbe", "application/vnd.llamagraphics.life-balance.exchange+xml", false),
+            ("les", "application/vnd.hhe.lesson-player", false),
+            ("less", "text/less", false),
+            ("lha", "application/x-lzh-compressed", false),
+            ("link66", "application/vnd.route66.link66+xml", false),
+            ("list", "text/plain", true),
+            ("list3820", "application/vnd.ibm.modcap", false),
+            ("listafp", "application/vnd.ibm.modcap", false),
+            ("litcoffee", "text/coffeescript", false),
+            ("lnk", "application/x-ms-shortcut", false),
+            ("log", "text/plain", true),
+            ("lostxml", "application/lost+xml", false),
+            ("lrf", "application/octet-stream", false),
+            ("lrm", "application/vnd.ms-lrm", false),
+            ("ltf", "application/vnd.frogans.ltf", false),
+            ("lua", "text/x-lua", false),
+            ("luac", "application/x-lua-bytecode", false),
+            ("lvp", "audio/vnd.lucent.voice", false),
+            ("lwp", "application/vnd.lotus-wordpro", false),
+            ("lzh", "application/x-lzh-compressed", false),
+            ("m13", "application/x-msmediaview", false),
+            ("m14", "application/x-msmediaview", false),
+            ("m1v", "video/mpeg", false),
+            ("m21", "application/mp21", false),
+            ("m2a", "audio/mpeg", false),
+            ("m2v", "video/mpeg", false),
+            ("m3a", "audio/mpeg", false),
+            ("m3u", "audio/x-mpegurl", false),
+            ("m3u8", "application/vnd.apple.mpegurl", false),
+            ("m4a", "audio/mp4", false),
+            ("m4p", "application/mp4", false),
+            ("m4u", "video/vnd.mpegurl", false),
+            ("m4v", "video/x-m4v", false),
+            ("ma", "application/mathematica", false),
+            ("mads", "application/mads+xml", false),
+            ("mag", "application/vnd.ecowin.chart", false),
+            ("maker", "application/vnd.framemaker", false),
+            ("man", "text/troff", false),
+            ("manifest", "text/cache-manifest", true),
+            ("map", "application/json; charset=utf-8", true),
+            ("mar", "application/octet-stream", false),
+            ("markdown", "text/markdown", true),
+            ("mathml", "application/mathml+xml", false),
+            ("mb", "application/mathematica", false),
+            ("mbk", "application/vnd.mobius.mbk", false),
+            ("mbox", "application/mbox", false),
+            ("mc1", "application/vnd.medcalcdata", false),
+            ("mcd", "application/vnd.mcd", false),
+            ("mcurl", "text/vnd.curl.mcurl", false),
+            ("md", "text/markdown", true),
+            ("mdb", "application/x-msaccess", false),
+            ("mdi", "image/vnd.ms-modi", false),
+            ("me", "text/troff", false),
+            ("mesh", "model/mesh", false),
+            ("meta4", "application/metalink4+xml", false),
+            ("metalink", "application/metalink+xml", false),
+            ("mets", "application/mets+xml", false),
+            ("mfm", "application/vnd.mfmp", false),
+            ("mft", "application/rpki-manifest", false),
+            ("mgp", "application/vnd.osgeo.mapguide.package", false),
+            ("mgz", "application/vnd.proteus.magazine", false),
+            ("mid", "audio/midi", false),
+            ("midi", "audio/midi", false),
+            ("mie", "application/x-mie", false),
+            ("mif", "application/vnd.mif", false),
+            ("mime", "message/rfc822", true),
+            ("mj2", "video/mj2", false),
+            ("mjp2", "video/mj2", false),
+            ("mjs", "application/javascript; charset=utf-8", true),
+            ("mk3d", "video/x-matroska", false),
+            ("mka", "audio/x-matroska", false),
+            ("mkd", "text/x-markdown", true),
+            ("mks", "video/x-matroska", false),
+            ("mkv", "video/x-matroska", false),
+            ("mlp", "application/vnd.dolby.mlp", false),
+            ("mmd", "application/vnd.chipnuts.karaoke-mmd", false),
+            ("mmf", "application/vnd.smaf", false),
+            ("mml", "text/mathml", false),
+            ("mmr", "image/vnd.fujixerox.edmics-mmr", false),
+            ("mng", "video/x-mng", false),
+            ("mny", "application/x-msmoney", false),
+            ("mobi", "application/x-mobipocket-ebook", false),
+            ("mods", "application/mods+xml", false),
+            ("mov", "video/quicktime", false),
+            ("movie", "video/x-sgi-movie", false),
+            ("mp2", "audio/mpeg", false),
+            ("mp21", "application/mp21", false),
+            ("mp2a", "audio/mpeg", false),
+            ("mp3", "audio/mpeg", false),
+            ("mp4", "video/mp4", false),
+            ("mp4a", "audio/mp4", false),
+            ("mp4s", "application/mp4", false),
+            ("mp4v", "video/mp4", false),
+            ("mpc", "application/vnd.mophun.certificate", false),
+            ("mpd", "application/dash+xml", false),
+            ("mpe", "video/mpeg", false),
+            ("mpeg", "video/mpeg", false),
+            ("mpg", "video/mpeg", false),
+            ("mpg4", "video/mp4", false),
+            ("mpga", "audio/mpeg", false),
+            ("mpkg", "application/vnd.apple.installer+xml", false),
+            ("mpm", "application/vnd.blueice.multipass", false),
+            ("mpn", "application/vnd.mophun.application", false),
+            ("mpp", "application/vnd.ms-project", false),
+            ("mpt", "application/vnd.ms-project", false),
+            ("mpy", "application/vnd.ibm.minipay", false),
+            ("mqy", "application/vnd.mobius.mqy", false),
+            ("mrc", "application/marc", false),
+            ("mrcx", "application/marcxml+xml", false),
+            ("ms", "text/troff", false),
+            ("mscml", "application/mediaservercontrol+xml", false),
+            ("mseed", "application/vnd.fdsn.mseed", false),
+            ("mseq", "application/vnd.mseq", false),
+            ("msf", "application/vnd.epson.msf", false),
+            ("msg", "application/vnd.ms-outlook", false),
+            ("msh", "model/mesh", false),
+            ("msi", "application/x-msdownload", false),
+            ("msl", "application/vnd.mobius.msl", false),
+            ("msm", "application/octet-stream", false),
+            ("msp", "application/octet-stream", false),
+            ("msty", "application/vnd.muvee.style", false),
+            ("mts", "model/vnd.mts", false),
+            ("mus", "application/vnd.musician", false),
+            ("musicxml", "application/vnd.recordare.musicxml+xml", false),
+            ("mvb", "application/x-msmediaview", false),
+            ("mwf", "application/vnd.mfer", false),
+            ("mxf", "application/mxf", false),
+            ("mxl", "application/vnd.recordare.musicxml", false),
+            ("mxml", "application/xv+xml", false),
+            ("mxs", "application/vnd.triscape.mxs", false),
+            ("mxu", "video/vnd.mpegurl", false),
+            ("n-gage", "application/vnd.nokia.n-gage.symbian.install", false),
+            ("n3", "text/n3", true),
+            ("nb", "application/mathematica", false),
+            ("nbp", "application/vnd.wolfram.player", false),
+            ("nc", "application/x-netcdf", false),
+            ("ncx", "application/x-dtbncx+xml", false),
+            ("nfo", "text/x-nfo", false),
+            ("ngdat", "application/vnd.nokia.n-gage.data", false),
+            ("nitf", "application/vnd.nitf", false),
+            ("nlu", "application/vnd.neurolanguage.nlu", false),
+            ("nml", "application/vnd.enliven", false),
+            ("nnd", "application/vnd.noblenet-directory", false),
+            ("nns", "application/vnd.noblenet-sealer", false),
+            ("nnw", "application/vnd.noblenet-web", false),
+            ("npx", "image/vnd.net-fpx", false),
+            ("nsc", "application/x-conference", false),
+            ("nsf", "application/vnd.lotus-notes", false),
+            ("ntf", "application/vnd.nitf", false),
+            ("nzb", "application/x-nzb", false),
+            ("oa2", "application/vnd.fujitsu.oasys2", false),
+            ("oa3", "application/vnd.fujitsu.oasys3", false),
+            ("oas", "application/vnd.fujitsu.oasys", false),
+            ("obd", "application/x-msbinder", false),
+            ("obj", "application/x-tgif", false),
+            ("oda", "application/oda", false),
+            ("odb", "application/vnd.oasis.opendocument.database", false),
+            ("odc", "application/vnd.oasis.opendocument.chart", false),
+            ("odf", "application/vnd.oasis.opendocument.formula", false),
+            ("odft", "application/vnd.oasis.opendocument.formula-template", false),
+            ("odg", "application/vnd.oasis.opendocument.graphics", false),
+            ("odi", "application/vnd.oasis.opendocument.image", false),
+            ("odm", "application/vnd.oasis.opendocument.text-master", false),
+            ("odp", "application/vnd.oasis.opendocument.presentation", false),
+            ("ods", "application/vnd.oasis.opendocument.spreadsheet", false),
+            ("odt", "application/vnd.oasis.opendocument.text", false),
+            ("oga", "audio/ogg", false),
+            ("ogg", "audio/ogg", false),
+            ("ogv", "video/ogg", false),
+            ("ogx", "application/ogg", false),
+            ("omdoc", "application/omdoc+xml", false),
+            ("onepkg", "application/onenote", false),
+            ("onetmp", "application/onenote", false),
+            ("onetoc", "application/onenote", false),
+            ("onetoc2", "application/onenote", false),
+            ("opf", "application/oebps-package+xml", false),
+            ("opml", "text/x-opml", false),
+            ("oprc", "application/vnd.palm", false),
+            ("org", "application/vnd.lotus-organizer", false),
+            ("osf", "application/vnd.yamaha.openscoreformat", false),
+            ("osfpvg", "application/vnd.yamaha.openscoreformat.osfpvg+xml", false),
+            ("otc", "application/vnd.oasis.opendocument.chart-template", false),
+            ("otf", "font/otf", true),
+            ("otg", "application/vnd.oasis.opendocument.graphics-template", false),
+            ("oth", "application/vnd.oasis.opendocument.text-web", false),
+            ("oti", "application/vnd.oasis.opendocument.image-template", false),
+            ("otp", "application/vnd.oasis.opendocument.presentation-template", false),
+            ("ots", "application/vnd.oasis.opendocument.spreadsheet-template", false),
+            ("ott", "application/vnd.oasis.opendocument.text-template", false),
+            ("ova", "application/x-virtualbox-ova", true),
+            ("ovf", "application/x-virtualbox-ovf", true),
+            ("oxps", "application/oxps", false),
+            ("oxt", "application/vnd.openofficeorg.extension", false),
+            ("p", "text/x-pascal", false),
+            ("p10", "application/pkcs10", false),
+            ("p12", "application/x-pkcs12", false),
+            ("p7b", "application/x-pkcs7-certificates", false),
+            ("p7c", "application/pkcs7-mime", false),
+            ("p7m", "application/pkcs7-mime", false),
+            ("p7r", "application/x-pkcs7-certreqresp", false),
+            ("p7s", "application/pkcs7-signature", false),
+            ("p8", "application/pkcs8", false),
+            ("pac", "application/x-ns-proxy-autoconfig", true),
+            ("pas", "text/x-pascal", false),
+            ("paw", "application/vnd.pawaafile", false),
+            ("pbd", "application/vnd.powerbuilder6", false),
+            ("pbm", "image/x-portable-bitmap", false),
+            ("pcap", "application/vnd.tcpdump.pcap", false),
+            ("pcf", "application/x-font-pcf", false),
+            ("pcl", "application/vnd.hp-pcl", false),
+            ("pclxl", "application/vnd.hp-pclxl", false),
+            ("pct", "image/x-pict", false),
+            ("pcurl", "application/vnd.curl.pcurl", false),
+            ("pcx", "image/x-pcx", false),
+            ("pdb", "application/vnd.palm", false),
+            ("pde", "text/x-processing", true),
+            ("pdf", "application/pdf", false),
+            ("pem", "application/x-x509-ca-cert", false),
+            ("pfa", "application/x-font-type1", false),
+            ("pfb", "application/x-font-type1", false),
+            ("pfm", "application/x-font-type1", false),
+            ("pfr", "application/font-tdpfr", false),
+            ("pfx", "application/x-pkcs12", false),
+            ("pgm", "image/x-portable-graymap", false),
+            ("pgn", "application/x-chess-pgn", false),
+            ("pgp", "application/pgp-encrypted", false),
+            ("php", "application/x-httpd-php", true),
+            ("pic", "image/x-pict", false),
+            ("pkg", "application/octet-stream", false),
+            ("pki", "application/pkixcmp", false),
+            ("pkipath", "application/pkix-pkipath", false),
+            ("pkpass", "application/vnd.apple.pkpass", false),
+            ("pl", "application/x-perl", false),
+            ("plb", "application/vnd.3gpp.pic-bw-large", false),
+            ("plc", "application/vnd.mobius.plc", false),
+            ("plf", "application/vnd.pocketlearn", false),
+            ("pls", "application/pls+xml", false),
+            ("pm", "application/x-perl", false),
+            ("pml", "application/vnd.ctc-posml", false),
+            ("png", "image/png", false),
+            ("pnm", "image/x-portable-anymap", false),
+            ("portpkg", "application/vnd.macports.portpkg", false),
+            ("pot", "application/vnd.ms-powerpoint", false),
+            ("potm", "application/vnd.ms-powerpoint.template.macroenabled.12", false),
+            ("potx", "application/vnd.openxmlformats-officedocument.presentationml.template", false),
+            ("ppam", "application/vnd.ms-powerpoint.addin.macroenabled.12", false),
+            ("ppd", "application/vnd.cups-ppd", false),
+            ("ppm", "image/x-portable-pixmap", false),
+            ("pps", "application/vnd.ms-powerpoint", false),
+            ("ppsm", "application/vnd.ms-powerpoint.slideshow.macroenabled.12", false),
+            ("ppsx", "application/vnd.openxmlformats-officedocument.presentationml.slideshow", false),
+            ("ppt", "application/vnd.ms-powerpoint", false),
+            ("pptm", "application/vnd.ms-powerpoint.presentation.macroenabled.12", false),
+            ("pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation", false),
+            ("pqa", "application/vnd.palm", false),
+            ("prc", "application/x-mobipocket-ebook", false),
+            ("pre", "application/vnd.lotus-freelance", false),
+            ("prf", "application/pics-rules", false),
+            ("ps", "application/postscript", true),
+            ("psb", "application/vnd.3gpp.pic-bw-small", false),
+            ("psd", "image/vnd.adobe.photoshop", true),
+            ("psf", "application/x-font-linux-psf", false),
+            ("pskcxml", "application/pskc+xml", false),
+            ("ptid", "application/vnd.pvi.ptid1", false),
+            ("pub", "application/x-mspublisher", false),
+            ("pvb", "application/vnd.3gpp.pic-bw-var", false),
+            ("pwn", "application/vnd.3m.post-it-notes", false),
+            ("pya", "audio/vnd.ms-playready.media.pya", false),
+            ("pyv", "video/vnd.ms-playready.media.pyv", false),
+            ("qam", "application/vnd.epson.quickanime", false),
+            ("qbo", "application/vnd.intu.qbo", false),
+            ("qfx", "application/vnd.intu.qfx", false),
+            ("qps", "application/vnd.publishare-delta-tree", false),
+            ("qt", "video/quicktime", false),
+            ("qwd", "application/vnd.quark.quarkxpress", false),
+            ("qwt", "application/vnd.quark.quarkxpress", false),
+            ("qxb", "application/vnd.quark.quarkxpress", false),
+            ("qxd", "application/vnd.quark.quarkxpress", false),
+            ("qxl", "application/vnd.quark.quarkxpress", false),
+            ("qxt", "application/vnd.quark.quarkxpress", false),
+            ("ra", "audio/x-pn-realaudio", false),
+            ("ram", "audio/x-pn-realaudio", false),
+            ("raml", "application/raml+yaml", true),
+            ("rar", "application/x-rar-compressed", false),
+            ("ras", "image/x-cmu-raster", false),
+            ("rcprofile", "application/vnd.ipunplugged.rcprofile", false),
+            ("rdf", "application/rdf+xml", true),
+            ("rdz", "application/vnd.data-vision.rdz", false),
+            ("rep", "application/vnd.businessobjects", false),
+            ("res", "application/x-dtbresource+xml", false),
+            ("rgb", "image/x-rgb", false),
+            ("rif", "application/reginfo+xml", false),
+            ("rip", "audio/vnd.rip", false),
+            ("ris", "application/x-research-info-systems", false),
+            ("rl", "application/resource-lists+xml", false),
+            ("rlc", "image/vnd.fujixerox.edmics-rlc", false),
+            ("rld", "application/resource-lists-diff+xml", false),
+            ("rm", "application/vnd.rn-realmedia", false),
+            ("rmi", "audio/midi", false),
+            ("rmp", "audio/x-pn-realaudio-plugin", false),
+            ("rms", "application/vnd.jcp.javame.midlet-rms", false),
+            ("rmvb", "application/vnd.rn-realmedia-vbr", false),
+            ("rnc", "application/relax-ng-compact-syntax", false),
+            ("rng", "application/xml", true),
+            ("roa", "application/rpki-roa", false),
+            ("roff", "text/troff", false),
+            ("rp9", "application/vnd.cloanto.rp9", false),
+            ("rpm", "application/x-redhat-package-manager", false),
+            ("rpss", "application/vnd.nokia.radio-presets", false),
+            ("rpst", "application/vnd.nokia.radio-preset", false),
+            ("rq", "application/sparql-query", false),
+            ("rs", "application/rls-services+xml", false),
+            ("rsd", "application/rsd+xml", false),
+            ("rss", "application/rss+xml", true),
+            ("rtf", "application/rtf", true),
+            ("rtx", "text/richtext", true),
+            ("run", "application/x-makeself", false),
+            ("s", "text/x-asm", false),
+            ("s3m", "audio/s3m", false),
+            ("saf", "application/vnd.yamaha.smaf-audio", false),
+            ("sass", "text/x-sass", false),
+            ("sbml", "application/sbml+xml", false),
+            ("sc", "application/vnd.ibm.secure-container", false),
+            ("scd", "application/x-msschedule", false),
+            ("scm", "application/vnd.lotus-screencam", false),
+            ("scq", "application/scvp-cv-request", false),
+            ("scs", "application/scvp-cv-response", false),
+            ("scss", "text/x-scss", false),
+            ("scurl", "text/vnd.curl.scurl", false),
+            ("sda", "application/vnd.stardivision.draw", false),
+            ("sdc", "application/vnd.stardivision.calc", false),
+            ("sdd", "application/vnd.stardivision.impress", false),
+            ("sdkd", "application/vnd.solent.sdkm+xml", false),
+            ("sdkm", "application/vnd.solent.sdkm+xml", false),
+            ("sdp", "application/sdp", false),
+            ("sdw", "application/vnd.stardivision.writer", false),
+            ("sea", "application/x-sea", false),
+            ("see", "application/vnd.seemail", false),
+            ("seed", "application/vnd.fdsn.seed", false),
+            ("sema", "application/vnd.sema", false),
+            ("semd", "application/vnd.semd", false),
+            ("semf", "application/vnd.semf", false),
+            ("ser", "application/java-serialized-object", false),
+            ("setpay", "application/set-payment-initiation", false),
+            ("setreg", "application/set-registration-initiation", false),
+            ("sfd-hdstx", "application/vnd.hydrostatix.sof-data", false),
+            ("sfs", "application/vnd.spotfire.sfs", false),
+            ("sfv", "text/x-sfv", false),
+            ("sgi", "image/sgi", false),
+            ("sgl", "application/vnd.stardivision.writer-global", false),
+            ("sgm", "text/sgml", false),
+            ("sgml", "text/sgml", false),
+            ("sh", "application/x-sh", true),
+            ("shar", "application/x-shar", false),
+            ("shex", "text/shex", false),
+            ("shf", "application/shf+xml", false),
+            ("shtml", "text/html", true),
+            ("sid", "image/x-mrsid-image", false),
+            ("sig", "application/pgp-signature", false),
+            ("sil", "audio/silk", false),
+            ("silo", "model/mesh", false),
+            ("sis", "application/vnd.symbian.install", false),
+            ("sisx", "application/vnd.symbian.install", false),
+            ("sit", "application/x-stuffit", false),
+            ("sitx", "application/x-stuffitx", false),
+            ("skd", "application/vnd.koan", false),
+            ("skm", "application/vnd.koan", false),
+            ("skp", "application/vnd.koan", false),
+            ("skt", "application/vnd.koan", false),
+            ("sldm", "application/vnd.ms-powerpoint.slide.macroenabled.12", false),
+            ("sldx", "application/vnd.openxmlformats-officedocument.presentationml.slide", false),
+            ("slim", "text/slim", false),
+            ("slm", "text/slim", false),
+            ("slt", "application/vnd.epson.salt", false),
+            ("sm", "application/vnd.stepmania.stepchart", false),
+            ("smf", "application/vnd.stardivision.math", false),
+            ("smi", "application/smil+xml", false),
+            ("smil", "application/smil+xml", false),
+            ("smv", "video/x-smv", false),
+            ("smzip", "application/vnd.stepmania.package", false),
+            ("snd", "audio/basic", false),
+            ("snf", "application/x-font-snf", false),
+            ("so", "application/octet-stream", false),
+            ("spc", "application/x-pkcs7-certificates", false),
+            ("spf", "application/vnd.yamaha.smaf-phrase", false),
+            ("spl", "application/x-futuresplash", false),
+            ("spot", "text/vnd.in3d.spot", false),
+            ("spp", "application/scvp-vp-response", false),
+            ("spq", "application/scvp-vp-request", false),
+            ("spx", "audio/ogg", false),
+            ("sql", "application/x-sql", false),
+            ("src", "application/x-wais-source", false),
+            ("srt", "application/x-subrip", false),
+            ("sru", "application/sru+xml", false),
+            ("srx", "application/sparql-results+xml", false),
+            ("ssdl", "application/ssdl+xml", false),
+            ("sse", "application/vnd.kodak-descriptor", false),
+            ("ssf", "application/vnd.epson.ssf", false),
+            ("ssml", "application/ssml+xml", false),
+            ("st", "application/vnd.sailingtracker.track", false),
+            ("stc", "application/vnd.sun.xml.calc.template", false),
+            ("std", "application/vnd.sun.xml.draw.template", false),
+            ("stf", "application/vnd.wt.stf", false),
+            ("sti", "application/vnd.sun.xml.impress.template", false),
+            ("stk", "application/hyperstudio", false),
+            ("stl", "application/vnd.ms-pki.stl", false),
+            ("str", "application/vnd.pg.format", false),
+            ("stw", "application/vnd.sun.xml.writer.template", false),
+            ("styl", "text/stylus", false),
+            ("stylus", "text/stylus", false),
+            ("sub", "text/vnd.dvb.subtitle", false),
+            ("sus", "application/vnd.sus-calendar", false),
+            ("susp", "application/vnd.sus-calendar", false),
+            ("sv4cpio", "application/x-sv4cpio", false),
+            ("sv4crc", "application/x-sv4crc", false),
+            ("svc", "application/vnd.dvb.service", false),
+            ("svd", "application/vnd.svd", false),
+            ("svg", "image/svg+xml", true),
+            ("svgz", "image/svg+xml", true),
+            ("swa", "application/x-director", false),
+            ("swf", "application/x-shockwave-flash", false),
+            ("swi", "application/vnd.aristanetworks.swi", false),
+            ("sxc", "application/vnd.sun.xml.calc", false),
+            ("sxd", "application/vnd.sun.xml.draw", false),
+            ("sxg", "application/vnd.sun.xml.writer.global", false),
+            ("sxi", "application/vnd.sun.xml.impress", false),
+            ("sxm", "application/vnd.sun.xml.math", false),
+            ("sxw", "application/vnd.sun.xml.writer", false),
+            ("t", "text/troff", false),
+            ("t3", "application/x-t3vm-image", false),
+            ("taglet", "application/vnd.mynfc", false),
+            ("tao", "application/vnd.tao.intent-module-archive", false),
+            ("tar", "application/x-tar", true),
+            ("tcap", "application/vnd.3gpp2.tcap", false),
+            ("tcl", "application/x-tcl", false),
+            ("teacher", "application/vnd.smart.teacher", false),
+            ("tei", "application/tei+xml", false),
+            ("teicorpus", "application/tei+xml", false),
+            ("tex", "application/x-tex", false),
+            ("texi", "application/x-texinfo", false),
+            ("texinfo", "application/x-texinfo", false),
+            ("text", "text/plain", true),
+            ("tfi", "application/thraud+xml", false),
+            ("tfm", "application/x-tex-tfm", false),
+            ("tga", "image/x-tga", false),
+            ("thmx", "application/vnd.ms-officetheme", false),
+            ("tif", "image/tiff", false),
+            ("tiff", "image/tiff", false),
+            ("tk", "application/x-tcl", false),
+            ("tmo", "application/vnd.tmobile-livetv", false),
+            ("torrent", "application/x-bittorrent", false),
+            ("tpl", "application/vnd.groove-tool-template", false),
+            ("tpt", "application/vnd.trid.tpt", false),
+            ("tr", "text/troff", false),
+            ("tra", "application/vnd.trueapp", false),
+            ("trm", "application/x-msterminal", false),
+            ("ts", "video/mp2t", false),
+            ("tsd", "application/timestamped-data", false),
+            ("tsv", "text/tab-separated-values", true),
+            ("ttc", "font/collection", false),
+            ("ttf", "font/ttf", false),
+            ("ttl", "text/turtle", false),
+            ("twd", "application/vnd.simtech-mindmapper", false),
+            ("twds", "application/vnd.simtech-mindmapper", false),
+            ("txd", "application/vnd.genomatix.tuxedo", false),
+            ("txf", "application/vnd.mobius.txf", false),
+            ("txt", "text/plain", true),
+            ("u32", "application/x-authorware-bin", false),
+            ("udeb", "application/x-debian-package", false),
+            ("ufd", "application/vnd.ufdl", false),
+            ("ufdl", "application/vnd.ufdl", false),
+            ("ulx", "application/x-glulx", false),
+            ("umj", "application/vnd.umajin", false),
+            ("unityweb", "application/vnd.unity", false),
+            ("uoml", "application/vnd.uoml+xml", false),
+            ("uri", "text/uri-list", true),
+            ("uris", "text/uri-list", true),
+            ("urls", "text/uri-list", true),
+            ("ustar", "application/x-ustar", false),
+            ("utz", "application/vnd.uiq.theme", false),
+            ("uu", "text/x-uuencode", false),
+            ("uva", "audio/vnd.dece.audio", false),
+            ("uvd", "application/vnd.dece.data", false),
+            ("uvf", "application/vnd.dece.data", false),
+            ("uvg", "image/vnd.dece.graphic", false),
+            ("uvh", "video/vnd.dece.hd", false),
+            ("uvi", "image/vnd.dece.graphic", false),
+            ("uvm", "video/vnd.dece.mobile", false),
+            ("uvp", "video/vnd.dece.pd", false),
+            ("uvs", "video/vnd.dece.sd", false),
+            ("uvt", "application/vnd.dece.ttml+xml", false),
+            ("uvu", "video/vnd.uvvu.mp4", false),
+            ("uvv", "video/vnd.dece.video", false),
+            ("uvva", "audio/vnd.dece.audio", false),
+            ("uvvd", "application/vnd.dece.data", false),
+            ("uvvf", "application/vnd.dece.data", false),
+            ("uvvg", "image/vnd.dece.graphic", false),
+            ("uvvh", "video/vnd.dece.hd", false),
+            ("uvvi", "image/vnd.dece.graphic", false),
+            ("uvvm", "video/vnd.dece.mobile", false),
+            ("uvvp", "video/vnd.dece.pd", false),
+            ("uvvs", "video/vnd.dece.sd", false),
+            ("uvvt", "application/vnd.dece.ttml+xml", false),
+            ("uvvu", "video/vnd.uvvu.mp4", false),
+            ("uvvv", "video/vnd.dece.video", false),
+            ("uvvx", "application/vnd.dece.unspecified", false),
+            ("uvvz", "application/vnd.dece.zip", false),
+            ("uvx", "application/vnd.dece.unspecified", false),
+            ("uvz", "application/vnd.dece.zip", false),
+            ("vbox", "application/x-virtualbox-vbox", true),
+            ("vbox-extpack", "application/x-virtualbox-vbox-extpack", false),
+            ("vcard", "text/vcard", true),
+            ("vcd", "application/x-cdlink", false),
+            ("vcf", "text/x-vcard", false),
+            ("vcg", "application/vnd.groove-vcard", false),
+            ("vcs", "text/x-vcalendar", false),
+            ("vcx", "application/vnd.vcx", false),
+            ("vdi", "application/x-virtualbox-vdi", true),
+            ("vhd", "application/x-virtualbox-vhd", true),
+            ("vis", "application/vnd.visionary", false),
+            ("viv", "video/vnd.vivo", false),
+            ("vmdk", "application/x-virtualbox-vmdk", true),
+            ("vob", "video/x-ms-vob", false),
+            ("vor", "application/vnd.stardivision.writer", false),
+            ("vox", "application/x-authorware-bin", false),
+            ("vrml", "model/vrml", false),
+            ("vsd", "application/vnd.visio", false),
+            ("vsf", "application/vnd.vsf", false),
+            ("vss", "application/vnd.visio", false),
+            ("vst", "application/vnd.visio", false),
+            ("vsw", "application/vnd.visio", false),
+            ("vtt", "text/vtt; charset=utf-8", true),
+            ("vtu", "model/vnd.vtu", false),
+            ("vxml", "application/voicexml+xml", false),
+            ("w3d", "application/x-director", false),
+            ("wad", "application/x-doom", false),
+            ("wadl", "application/vnd.sun.wadl+xml", true),
+            ("war", "application/java-archive", false),
+            ("wasm", "application/wasm", true),
+            ("wav", "audio/wave", false),
+            ("wax", "audio/x-ms-wax", false),
+            ("wbmp", "image/vnd.wap.wbmp", false),
+            ("wbs", "application/vnd.criticaltools.wbs+xml", false),
+            ("wbxml", "application/vnd.wap.wbxml", false),
+            ("wcm", "application/vnd.ms-works", false),
+            ("wdb", "application/vnd.ms-works", false),
+            ("wdp", "image/vnd.ms-photo", false),
+            ("weba", "audio/webm", false),
+            ("webapp", "application/x-web-app-manifest+json", true),
+            ("webm", "video/webm", false),
+            ("webmanifest", "application/manifest+json; charset=utf-8", true),
+            ("webp", "image/webp", false),
+            ("wg", "application/vnd.pmi.widget", false),
+            ("wgt", "application/widget", false),
+            ("wks", "application/vnd.ms-works", false),
+            ("wm", "video/x-ms-wm", false),
+            ("wma", "audio/x-ms-wma", false),
+            ("wmd", "application/x-ms-wmd", false),
+            ("wmf", "application/x-msmetafile", false),
+            ("wml", "text/vnd.wap.wml", false),
+            ("wmlc", "application/vnd.wap.wmlc", false),
+            ("wmls", "text/vnd.wap.wmlscript", false),
+            ("wmlsc", "application/vnd.wap.wmlscriptc", false),
+            ("wmv", "video/x-ms-wmv", false),
+            ("wmx", "video/x-ms-wmx", false),
+            ("wmz", "application/x-ms-wmz", false),
+            ("woff", "application/font-woff", false),
+            ("woff2", "font/woff2", false),
+            ("wpd", "application/vnd.wordperfect", false),
+            ("wpl", "application/vnd.ms-wpl", false),
+            ("wps", "application/vnd.ms-works", false),
+            ("wqd", "application/vnd.wqd", false),
+            ("wri", "application/x-mswrite", false),
+            ("wrl", "model/vrml", false),
+            ("wsdl", "application/wsdl+xml", false),
+            ("wspolicy", "application/wspolicy+xml", false),
+            ("wtb", "application/vnd.webturbo", false),
+            ("wvx", "video/x-ms-wvx", false),
+            ("x32", "application/x-authorware-bin", false),
+            ("x3d", "model/x3d+xml", true),
+            ("x3db", "model/x3d+binary", false),
+            ("x3dbz", "model/x3d+binary", false),
+            ("x3dv", "model/x3d+vrml", false),
+            ("x3dvz", "model/x3d+vrml", false),
+            ("x3dz", "model/x3d+xml", true),
+            ("xaml", "application/xaml+xml", false),
+            ("xap", "application/x-silverlight-app", false),
+            ("xar", "application/vnd.xara", false),
+            ("xbap", "application/x-ms-xbap", false),
+            ("xbd", "application/vnd.fujixerox.docuworks.binder", false),
+            ("xbm", "image/x-xbitmap", false),
+            ("xdf", "application/xcap-diff+xml", false),
+            ("xdm", "application/vnd.syncml.dm+xml", false),
+            ("xdp", "application/vnd.adobe.xdp+xml", false),
+            ("xdssc", "application/dssc+xml", false),
+            ("xdw", "application/vnd.fujixerox.docuworks", false),
+            ("xenc", "application/xenc+xml", false),
+            ("xer", "application/patch-ops-error+xml", false),
+            ("xfdf", "application/vnd.adobe.xfdf", false),
+            ("xfdl", "application/vnd.xfdl", false),
+            ("xht", "application/xhtml+xml", true),
+            ("xhtml", "application/xhtml+xml", true),
+            ("xhvml", "application/xv+xml", false),
+            ("xif", "image/vnd.xiff", false),
+            ("xla", "application/vnd.ms-excel", false),
+            ("xlam", "application/vnd.ms-excel.addin.macroenabled.12", false),
+            ("xlc", "application/vnd.ms-excel", false),
+            ("xlf", "application/x-xliff+xml", false),
+            ("xlm", "application/vnd.ms-excel", false),
+            ("xls", "application/vnd.ms-excel", false),
+            ("xlsb", "application/vnd.ms-excel.sheet.binary.macroenabled.12", false),
+            ("xlsm", "application/vnd.ms-excel.sheet.macroenabled.12", false),
+            ("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", false),
+            ("xlt", "application/vnd.ms-excel", false),
+            ("xltm", "application/vnd.ms-excel.template.macroenabled.12", false),
+            ("xltx", "application/vnd.openxmlformats-officedocument.spreadsheetml.template", false),
+            ("xlw", "application/vnd.ms-excel", false),
+            ("xm", "audio/xm", false),
+            ("xml", "application/xml", true),
+            ("xo", "application/vnd.olpc-sugar", false),
+            ("xop", "application/xop+xml", true),
+            ("xpi", "application/x-xpinstall", false),
+            ("xpl", "application/xproc+xml", false),
+            ("xpm", "image/x-xpixmap", false),
+            ("xpr", "application/vnd.is-xpr", false),
+            ("xps", "application/vnd.ms-xpsdocument", false),
+            ("xpw", "application/vnd.intercon.formnet", false),
+            ("xpx", "application/vnd.intercon.formnet", false),
+            ("xsd", "application/xml", true),
+            ("xsl", "application/xml", true),
+            ("xslt", "application/xslt+xml", false),
+            ("xsm", "application/vnd.syncml+xml", false),
+            ("xspf", "application/xspf+xml", false),
+            ("xul", "application/vnd.mozilla.xul+xml", true),
+            ("xvm", "application/xv+xml", false),
+            ("xvml", "application/xv+xml", false),
+            ("xwd", "image/x-xwindowdump", false),
+            ("xyz", "chemical/x-xyz", false),
+            ("xz", "application/x-xz", false),
+            ("yaml", "text/yaml", false),
+            ("yang", "application/yang", false),
+            ("yin", "application/yin+xml", false),
+            ("yml", "text/yaml", false),
+            ("ymp", "text/x-suse-ymp", true),
+            ("z1", "application/x-zmachine", false),
+            ("z2", "application/x-zmachine", false),
+            ("z3", "application/x-zmachine", false),
+            ("z4", "application/x-zmachine", false),
+            ("z5", "application/x-zmachine", false),
+            ("z6", "application/x-zmachine", false),
+            ("z7", "application/x-zmachine", false),
+            ("z8", "application/x-zmachine", false),
+            ("zaz", "application/vnd.zzazz.deck+xml", false),
+            ("zip", "application/zip", false),
+            ("zir", "application/vnd.zul", false),
+            ("zirz", "application/vnd.zul", false),
+            ("zmm", "application/vnd.handheld-entertainment+xml", false),
+        ]
     };
 }

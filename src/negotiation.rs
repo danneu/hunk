@@ -22,14 +22,13 @@ pub fn any_match(header_value: Option<&header::IfMatch>, etag: &header::EntityTa
 }
 
 // Returns Ok(Encoding) only if it's one of the compressions we support. Else we should not compress.
-// TODO: Is it worthwhile to even support anything beyond gzip?
 pub fn negotiate_encoding(
     header_value: Option<&header::AcceptEncoding>,
 ) -> Option<header::Encoding> {
     match header_value {
         None => None,
         Some(&header::AcceptEncoding(ref qitems)) => {
-            let qitems: &Vec<header::QualityItem<header::Encoding>> = qitems;
+//            let qitems: &Vec<header::QualityItem<header::Encoding>> = qitems;
             let mut qitems = qitems.clone();
 
             // Sort by client preference descending
@@ -39,17 +38,16 @@ pub fn negotiate_encoding(
                 match qi.item {
                     header::Encoding::Gzip =>
                         return Some(header::Encoding::Gzip),
-                    header::Encoding::EncodingExt(ext) =>
-                    // Use gzip if they have no preference
-                        if ext == "*" {
-                            return Some(header::Encoding::Gzip)
-                        }
                     header::Encoding::Identity =>
                         return None,
+                    header::Encoding::EncodingExt(ref ext) if ext == "*" =>
+                        // Use gzip if they have no preference
+                        return Some(header::Encoding::Gzip),
                     _ =>
                         {}
                 }
             }
+
             None
         }
     }

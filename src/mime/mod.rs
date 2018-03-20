@@ -1,7 +1,8 @@
 use std::path::Path;
-use hyper::mime::Mime;
+use hyper::mime::{self, Mime};
 use unicase::Ascii;
 
+#[macro_use]
 mod records;
 
 // PUBLIC
@@ -10,6 +11,10 @@ mod records;
 pub struct MimeRecord {
     pub mime: Mime,
     pub compressible: bool,
+}
+
+pub fn is_mime_compressible(mime: &Mime) -> bool {
+    records::COMPRESSIBLE_BY_MIME.contains(mime)
 }
 
 pub fn guess_mime_by_path(path: &Path) -> MimeRecord {
@@ -24,7 +29,7 @@ pub fn guess_mime_by_path(path: &Path) -> MimeRecord {
 fn octet_stream() -> MimeRecord {
     MimeRecord {
         compressible: false,
-        mime: ::hyper::mime::APPLICATION_OCTET_STREAM,
+        mime: mime::APPLICATION_OCTET_STREAM,
     }
 }
 

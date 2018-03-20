@@ -3,7 +3,7 @@ use std::ops::Range;
 use hyper::header::{self, ByteRangeSpec};
 use std::cmp;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum RequestedRange {
     // Client did not provide a range
     None,
@@ -22,9 +22,13 @@ pub fn parse_range_header(
 ) -> RequestedRange {
     match header_value {
         Some(&header::Range::Bytes(ref byte_ranges)) => {
-            if byte_ranges.is_empty() {
-                return RequestedRange::NotSatisfiable;
-            }
+            // Get the first byte range or short-circuit if none given.
+            let byte_range = match byte_ranges.first() {
+                Some(range) =>
+                    range,
+                None =>
+                    return RequestedRange::NotSatisfiable,
+            };
 
             // Avoid overflow on zero-length file by short-circuiting if client tries
             // to define a range at all since even 0-0 is impossible.
@@ -34,7 +38,7 @@ pub fn parse_range_header(
 
             let max_end = file_len - 1;
 
-            let range = match *byte_ranges.first().unwrap() {
+            let range = match *byte_range {
                 ByteRangeSpec::FromTo(start, end) => start..(cmp::min(max_end, end)),
                 ByteRangeSpec::AllFrom(start) => start..max_end,
                 ByteRangeSpec::Last(suffix_len) => {
@@ -79,4 +83,39 @@ pub fn parse_range_header(
             }
         }
     }
+}
+
+#[test]
+// TODO: Add more tests. Test failures. Consider using RangeInclusive.
+fn test_parse_range_header() {
+    // Range given but hyper can't parse it.
+    assert_eq!(
+        RequestedRange::NotSatisfiable,
+        parse_range_header(true, None, 0)
+    );
+    // Range not given at all
+    assert_eq!(RequestedRange::None, parse_range_header(false, None, 0));
+
+    // Zero-length entity cannot be satisfied
+    assert_eq!(
+        RequestedRange::NotSatisfiable,
+        parse_range_header(
+            true,
+            Some(&header::Range::Bytes(vec![
+                header::ByteRangeSpec::FromTo(0, 0),
+            ])),
+            0
+        )
+    );
+
+    assert_eq!(
+        RequestedRange::Satisfiable(0..0),
+        parse_range_header(
+            true,
+            Some(&header::Range::Bytes(vec![
+                header::ByteRangeSpec::FromTo(0, 0),
+            ])),
+            1
+        )
+    );
 }

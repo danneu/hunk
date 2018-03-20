@@ -1,8 +1,8 @@
 # hunk
 
-A simple, single-threaded, hobby static-asset server built with Rust.
+A simple, hobby static-asset server built with Rust.
 
-My goals are to build a reasonable server while learning and practicing Rust.
+![terminal screenshot](/img/splash.png)
 
 ## Features
 
@@ -12,7 +12,8 @@ Not exhaustive.
 - [x] `Range` support
 - [x] Gzip support
 - [x] Directory index UI
-- [ ] Tests
+- [x] ETag / Conditional Get / Not Modified
+- [x] Middleware
 
 ## Usage
 
@@ -23,39 +24,31 @@ Download and build hunk:
     cargo build --release
     
 A `hunk` executable is now available at `./target/release/hunk`.
-    
-Serve the "./public" directory:
 
-    ./hunk public -p 3000
-    ./hunk public -h 0.0.0.0 -p 80
-    
-However, you'll need to use a config file to opt into most of Hunk's features.
+Launch hunk with default settings:
+
+    $ hunk
+    [hunk] Listening on localhost:3000
     
 ## Config file
 
 Hunk looks for an optional Hunk.toml file in the current directory.
 
-**Note:** Command-line arguments override config file options.
-
-This Hunk.toml file turns on the default gzip handler and
-tells the client to cache all files for 4 hours.
-
     [server]
-    host = "0.0.0.0"
-    port = 80
+    addr = "localhost:3000"
     root = "public"
     
-    # Log to stdout
+    # Log to req/res to stdout
     [log]
     
-    # Apply gzip to compressible files
+    # Apply default gzip middleware
     [gzip]
     
     # Set cache-control response header
     [cache]
     max_age = 14400 
     
-    # Set Cross Origin response headers
+    # Set default Cross Origin response headers
     [cors]
     
     # Show folder browser on folder requests
@@ -70,8 +63,7 @@ but some of them have required fields.
 
 ### server
 
-- `host` (optional string): Ipv4 address to bind to. Default = "127.0.0.1".
-- `port` (optional int): Port to bind to. Default = 1337.
+- `addr` (optional string): Ipv4 address + port to bind to. Default = "localhost:3000".
 - `root` (optional string): Directory to serve. Default = current directory.
 
 ### log
@@ -83,10 +75,6 @@ but some of them have required fields.
 Guesses file types by their file extension and compresses them if they are considered compressible.
 
 For example, .html is compressible but media files like .jpg and .mp4 are not.
-
-- `level` (optional int): Set the compression level between 1 (fastest) and 9 (best). Default = 6.
-- `threshold` (optional int): Only gzip files when they are at least this long. Default = 1400.
-- `also_extensions` (optional array of strings): Also gzip files with these case-insensitive extensions. Default = []. Ex: `also_extensions = ["toml"]`.
 
 ### cache
 
@@ -103,7 +91,7 @@ Add [Cross-Origin Resource Sharing](https://developer.mozilla.org/en-US/docs/Web
 - `allowed_headers` (optional array of strings). Default: `[]`. Ex: `["X-Foo", "X-Bar"]`.
 - `exposed_headers` (optional array of strings). Default: `[]`. Ex: `["X-Exposed"]`.
 - `allowed_credentials` (optional bool). Default: `false`.
-- `max_age` (optional int)
+- `max_age` (optional int) seconds
 
 ### browse
 
@@ -112,10 +100,11 @@ Display folder contents browser.
 When browse is enabled, a request for a folder will respond with an
 HTML page that links to all of the contained files.
 
-![browser screenshot](/docs/browse.png)
+![browser screenshot](/img/browse.png)
 
 ## Development
 
     git clone https://github.com/danneu/hunk.git
     cd hunk
+    cargo install cargo-watch
     cargo watch -x 'run --bin hunk'
