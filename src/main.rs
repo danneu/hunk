@@ -20,7 +20,11 @@ fn main() {
     // Parse first argv as path.
     // If given, then it must exist.
     let path = args()
-        .nth(1)
+        .nth(1);
+
+    println!("path from argv: {:?}", path);
+
+    let path = path
         .map(PathBuf::from)
         .map(|p| p.canonicalize());
 
@@ -34,11 +38,14 @@ fn main() {
             ::std::process::exit(1);
         },
         // Path not given, so try default config location.
-        None =>
-            PathBuf::from("Hunk.toml"),
+        None => {
+            println!("attempting to load ./Hunk.toml if there is one");
+            PathBuf::from("Hunk.toml")
+        }
     };
 
     let config = read_config(path)
+        .map_err(|e| println!("failed to load config: {}", e))
         .unwrap_or_else(|_| Config::default());
 
     hunk::serve(config)
