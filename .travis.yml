@@ -48,8 +48,8 @@ deploy:
   file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
   skip_cleanup: true
   on:
-    repo: danneu/hunk
     tags: true
+    repo: danneu/hunk
 
 
 cache: cargo

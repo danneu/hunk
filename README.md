@@ -18,7 +18,9 @@ Not exhaustive.
 
 ## Usage
 
-Download and build hunk:
+You can find compiled binaries on the [releases](https://github.com/danneu/hunk/releases) page.
+
+Or compile them yourself:
 
     git clone git@github.com:danneu/hunk.git
     cd hunk
