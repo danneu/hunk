@@ -21,7 +21,10 @@ main() {
     cross rustc --bin hunk --target $TARGET --release -- -C lto
 
     # TODO Update this to package the right artifacts
-    cp target/$TARGET/release/hunk $stage/
+    # cp target/$TARGET/release/hunk $stage/
+
+    # Add the tag to the executable's name
+    cp target/$TARGET/release/hunk $stage/hunk-$TRAVIS_TAG
 
     cd $stage
     tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.tar.gz *

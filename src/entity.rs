@@ -114,10 +114,13 @@ impl Entity {
 
         let (tx, body) = Body::pair();
 
-        self.inner
-            .pool
-            .spawn(tx.send_all(stream.map(Ok).map_err(|_e| unreachable!())))
-            .forget();
+        let future = tx.send_all(stream.map(Ok).map_err(|e| {
+            // TODO: How should I handle this?
+            error!("error while sending get_range stream: {}", e);
+            unimplemented!()
+        }));
+
+        self.inner.pool.spawn(future).forget();
 
         body
     }

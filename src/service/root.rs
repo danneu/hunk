@@ -59,6 +59,11 @@ fn handle_request(pool: &CpuPool, config: &'static config::Server, req: &Request
         Ok(file) => file,
     };
 
+    // Only service files
+    if let Ok(false) = file.metadata().map(|meta| meta.is_file()) {
+        return response::not_found()
+    }
+
     let entity = match entity::Entity::new(
         file,
         pool.clone(),
