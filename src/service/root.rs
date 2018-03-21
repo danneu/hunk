@@ -38,13 +38,13 @@ impl Service for Root {
         let config = self.config;
 
         Box::new(self.pool.spawn_fn(move || {
-            let res = handle_request(pool, config, &req);
+            let res = handle_request(&pool, config, &req);
             Ok(res)
         }))
     }
 }
 
-fn handle_request(pool: CpuPool, config: &'static config::Server, req: &Request) -> Response<Body> {
+fn handle_request(pool: &CpuPool, config: &'static config::Server, req: &Request) -> Response<Body> {
     if *req.method() != Method::Get && *req.method() != Method::Head && *req.method() != Method::Options {
         return response::method_not_allowed();
     }

@@ -9,7 +9,7 @@ use hyper::Body;
 //
 // TODO: Convert back to Stream -> Stream transformation when Hyper 0.12.x releases
 // since it'll have Body::wrap_stream().
-pub fn gzip(pool: CpuPool, level: Compression, body: Body) -> Body {
+pub fn gzip(pool: &CpuPool, level: Compression, body: Body) -> Body {
     let stream = body.and_then(move |chunk| {
         let mut encoder = GzEncoder::new(Vec::new(), level);
         encoder

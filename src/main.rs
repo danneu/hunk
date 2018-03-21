@@ -21,7 +21,7 @@ fn main() {
     let path = args()
         .nth(1)
         .map(PathBuf::from)
-        .unwrap_or(PathBuf::from("Hunk.toml"));
+        .unwrap_or_else(|| PathBuf::from("Hunk.toml"));
 
     let path = match path.canonicalize() {
         Err(e) => {

@@ -69,7 +69,7 @@ impl<T> Service for Compress<T>
                     length,
             };
 
-            let should_compress = mime::is_mime_compressible(&mime) && content_length >= config.threshold && {
+            let should_compress = mime::is_mime_compressible(mime) && content_length >= config.threshold && {
                 let encoding = negotiation::negotiate_encoding(req_accept_encoding.as_ref());
                 encoding == Some(header::Encoding::Gzip)
             };
@@ -101,9 +101,9 @@ impl<T> Service for Compress<T>
             //     let (head, body) = response.split();
             //     let response = Response::join(head, transform(body))
             Response::new()
-                .with_status(res.status().clone())
+                .with_status(res.status())
                 .with_headers(res.headers().clone())
-                .with_body(compress::gzip(pool, Compression::new(1), res.body()))
+                .with_body(compress::gzip(&pool, Compression::new(1), res.body()))
         }))
     }
 }
