@@ -1,14 +1,11 @@
 use std::u64;
 use std::time::Duration;
 
-use hyper::{ Body, Response};
+use hyper::{Body, Response};
 use unicase::Ascii;
 
-const NANOS_PER_MILLI: u64 = 1_000_000;
-const MILLIS_PER_SEC: u64 = 1_000;
-
 pub fn duration_as_millis(d: Duration) -> u64 {
-    d.as_secs() * MILLIS_PER_SEC + u64::from(d.subsec_nanos()) / NANOS_PER_MILLI
+    d.as_secs() * 1_000 + u64::from(d.subsec_nanos()) / 1_000_000
 }
 
 // If the Vary header is empty, then create it.
@@ -19,15 +16,14 @@ pub fn append_header_vary(res: &mut Response<Body>, item: Ascii<String>) {
 
     match res.headers_mut().get_mut::<Vary>() {
         Some(&mut Vary::Any) =>
-            return,
+            {},
         Some(&mut Vary::Items(ref mut xs)) => {
             xs.push(item);
-            return
         },
-        _ => {}
+        None =>
+            res.headers_mut().set(Vary::Items(vec![item]))
     }
 
-    res.headers_mut().set(Vary::Items(vec![item]))
 }
 
 

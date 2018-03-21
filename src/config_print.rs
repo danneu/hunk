@@ -2,15 +2,6 @@ use colored::Colorize;
 
 use config::{self, Config};
 
-pub fn minimal(config: &Config) {
-    println!("listening on {}", config.server.addr);
-    println!(
-        "[hunk] serving \"{}\" at http://{}",
-        config.server.root.to_str().unwrap(),
-        config.server.addr,
-    );
-}
-
 pub fn pretty(config: &Config) {
     // SERVER
 

@@ -1,6 +1,6 @@
 # hunk
 
-A simple, hobby static-asset server built with Rust.
+A simple, hobby, static-asset server built with Rust.
 
 ![terminal screenshot](/img/splash.png)
 
@@ -13,7 +13,8 @@ Not exhaustive.
 - [x] Gzip support
 - [x] Directory index UI
 - [x] ETag / Conditional Get / Not Modified
-- [x] Middleware
+- [x] Middleware composition
+- [x] Lightweight (Disk usage: 4.8mb, RAM usage: 850kb idle)
 
 ## Usage
 

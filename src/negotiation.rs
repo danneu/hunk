@@ -28,7 +28,7 @@ pub fn negotiate_encoding(
     match header_value {
         None => None,
         Some(&header::AcceptEncoding(ref qitems)) => {
-//            let qitems: &Vec<header::QualityItem<header::Encoding>> = qitems;
+            // Note: qitems: &Vec<header::QualityItem<header::Encoding>>
             let mut qitems = qitems.clone();
 
             // Sort by client preference descending

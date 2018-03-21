@@ -20,6 +20,8 @@ extern crate unicase;
 extern crate colored;
 extern crate chrono;
 extern crate leak;
+#[macro_use] extern crate log;
+extern crate env_logger;
 extern crate percent_encoding;
 #[macro_use] extern crate lazy_static;
 extern crate serde;
@@ -54,6 +56,8 @@ mod config;
 pub use config::Config;
 
 pub fn serve(config: Config) {
+    env_logger::init();
+
     use service::{log::Log, cors::Cors, root::Root, compress::Compress, browse::Browse, gate::Gate};
 
     let pool = Box::new(CpuPool::new(1)).leak();
@@ -89,24 +93,24 @@ pub fn serve(config: Config) {
             .map(|_| ())
             .map_err(|_e| {
                 // Note: Noisy (epipe)
-                // eprintln!("http.serve_connection error: {:?}", e);
+                // error!("http.serve_connection error: {:?}", _e);
                 ()
             });
 
         handle.execute(conn)
             .map(|_| ())
             .map_err(|e| {
-                eprintln!("executor.handle error: {:?}", e);
+                error!("handle.execute error: {:?}", e);
                 // TODO: Figure out how to handle this.
                 // For now, just unify with expected io::Error
-                std::io::Error::new(std::io::ErrorKind::Other, "temp error")
+                std::io::Error::new(std::io::ErrorKind::Other, "error stub")
             })
     });
 
     if atty::is(atty::Stream::Stdout) {
         config_print::pretty(&config);
     } else {
-        config_print::minimal(&config);
+        info!("listening at {}", config.server.addr);
     }
 
     core.run(server).unwrap();
