@@ -35,25 +35,27 @@ Launch hunk with default settings:
 
 Hunk looks for an optional Hunk.toml file in the current directory.
 
-    [server]
-    addr = "localhost:3000"
-    root = "public"
-    
-    # Log to req/res to stdout
-    [log]
-    
-    # Apply default gzip middleware
-    [gzip]
-    
-    # Set cache-control response header
-    [cache]
-    max_age = 14400 
-    
-    # Set default Cross Origin response headers
-    [cors]
-    
-    # Show folder browser on folder requests
-    [browse]
+```toml
+[server]
+addr = "localhost:3000"
+root = "public"
+
+# Log to req/res to stdout
+[log]
+
+# Apply default gzip middleware
+[gzip]
+
+# Set cache-control response header
+[cache]
+max_age = 14400 
+
+# Set default Cross Origin response headers
+[cors]
+
+# Show folder browser on folder requests
+[browse]
+```
     
     
 If the `[gzip]` `[cache]`, `[log]`, etc. keys did not exist, those features
