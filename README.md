@@ -1,4 +1,4 @@
-# hunk
+# hunk [![Build Status](https://travis-ci.org/danneu/hunk.svg?branch=master)](https://travis-ci.org/danneu/hunk)
 
 A simple, hobby, static-asset server built with Rust.
 
@@ -108,4 +108,4 @@ HTML page that links to all of the contained files.
     git clone https://github.com/danneu/hunk.git
     cd hunk
     cargo install cargo-watch
-    cargo watch -x 'run --bin hunk'
+    CARGO_INCREMENTAL=1 RUST_LOG=1 cargo watch -x 'run --bin hunk'
