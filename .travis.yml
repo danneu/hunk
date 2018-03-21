@@ -44,9 +44,12 @@ deploy:
   provider: releases
   api_key:
     secure: WeKSA2dZXWIm9BrZs27zRHag2n2X6qZGazLHyx39yPRFux5y7gQoXX5nkT/u0vrB0dW5jrF6aFliDG/yjMwJ30wN+YzsuMSeZMVBZ5byE/22SV71REBIJrv+M1RBOg2Vh9U0wH+I6nsC7oUgT8VSIkeCLXRbGG1qT9Yeb475cPWfNWiwySfnC6uzB2+hr7jYD4wqBrHXiSJ9Xu5yT0/mxnaeJWnt7EXBCSqsPkWZZfVOLnP0xvKwdwzh3LHDFTYKgSmXfUt97ANRS9VGYZyWuXV5PFRxcpT4J58Wtshxw37MyAwV/1TCtACsmGPMiZovCpaaSnjm158b022T415TNEmrUKXekLZCbCOrkvkkBs8tWROhTwhpseNg5GZFYMAeAqXrrZuGFE75p5DzPGo9KuSg4ZmYlH7lFpt/6rNO+GjG3roVwBKrHT6Yoefs8Yl1bNJLXrCrSKzB+WoOD6JwGelEVx7NEPSUYd+29reJ9leA2A84WWKBsbanH7JydBnEDMASajlQUCyXJB42juDmo3bUPm1WnN+xzFEE9cTwjs/7wjEdOM1lOq52XC75xKs6eTnrp9d+vM6nhilYfaWPF3Caq6tmJiI3aeF+OSthEGHO4exT41SD8YuY763HOmx2gL9G8HesfwfQRqsbek9PYxx293lZHRXnjK1e2D8uOcQ=
-  file: ${PROJECT_NAME}-${TRAVIS_TAG}-${TARGET}.tar.gz
+  file_glob: true
+  file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
+  skip_cleanup: true
   on:
     repo: danneu/hunk
+    tags: true
 
 
 cache: cargo

@@ -30,7 +30,7 @@ fn main() {
             path,
         // Path given but it was not found
         Some(Err(e)) => {
-            eprintln!("could not open or find config path");
+            eprintln!("could not open or find config path: {}", e);
             ::std::process::exit(1);
         },
         // Path not given, so try default config location.
