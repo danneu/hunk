@@ -154,7 +154,7 @@ impl<'de> serde::Deserialize<'de> for Origin {
             Arr(Vec<String>),
         }
 
-        fn url_to_origin(s: String) -> Result<header::Origin, url::ParseError> {
+        fn url_to_origin(s: &str) -> Result<header::Origin, url::ParseError> {
             let url: Url = s.parse()?;
             Ok(header::Origin::new(
                 url.scheme().to_string(),
@@ -173,7 +173,7 @@ impl<'de> serde::Deserialize<'de> for Origin {
                 )),
             Ok(Origin_::Arr(xs)) => {
                 let origins = xs.into_iter()
-                    .map(|x| url_to_origin(x).map_err(|e| D::Error::custom(e.description())))
+                    .map(|x| url_to_origin(&x).map_err(|e| D::Error::custom(e.description())))
                     .collect::<Result<Vec<header::Origin>, _>>()?;
                 Ok(Origin::Few(origins))
             },

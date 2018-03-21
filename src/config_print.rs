@@ -34,7 +34,7 @@ pub fn pretty(config: &Config) {
         "- cors: {}",
         match config.cors.as_ref() {
             None => "off".red().bold().to_string(),
-            Some(ref opts) => {
+            Some(opts) => {
                 let mut s = format!("{}", "on".green().bold());
                 s.push(' ');
                 let origin = match opts.origin {

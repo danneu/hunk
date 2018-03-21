@@ -45,8 +45,7 @@ impl<T> Service for Compress<T>
         }
 
         let pool = self.pool.clone();
-        let req_accept_encoding: Option<header::AcceptEncoding> = req.headers().get::<header::AcceptEncoding>()
-            .map(|x| x.clone());
+        let req_accept_encoding = req.headers().get::<header::AcceptEncoding>().cloned();
 
 
         Box::new(self.next.call(req).map(move |mut res| {

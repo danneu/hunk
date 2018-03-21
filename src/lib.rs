@@ -108,7 +108,7 @@ pub fn serve(config: Config) {
     });
 
     if atty::is(atty::Stream::Stdout) {
-        config_print::pretty(&config);
+        config_print::pretty(config);
     } else {
         info!("listening at {}", config.server.addr);
     }
