@@ -17,22 +17,28 @@ fn read_config<P: AsRef<Path>>(path: P) -> Result<Config, String> {
 }
 
 fn main() {
-    // Parse first argv as path
+    // Parse first argv as path.
+    // If given, then it must exist.
     let path = args()
         .nth(1)
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("Hunk.toml"));
+        .map(|p| p.canonicalize());
 
-    let path = match path.canonicalize() {
-        Err(e) => {
-            eprintln!("could not open config file {:?}: {}", path, e);
-            ::std::process::exit(1)
+    let path = match path {
+        // Path was given and it existed
+        Some(Ok(path)) =>
+            path,
+        // Path given but it was not found
+        Some(Err(e)) => {
+            eprintln!("could not open or find config path");
+            ::std::process::exit(1);
         },
-        Ok(path) => path,
+        // Path not given, so try default config location.
+        None =>
+            PathBuf::from("Hunk.toml"),
     };
 
-    let config = read_config(path.clone())
-        .map_err(|e| println!("could not load a config file {:?}. using default settings. {}", path, e))
+    let config = read_config(path)
         .unwrap_or_else(|_| Config::default());
 
     hunk::serve(config)
