@@ -86,7 +86,7 @@ impl<T> Service for Compress<T>
             res.headers_mut().set(header::ContentEncoding(vec![header::Encoding::Gzip]));
 
             // Append Accept-Encoding
-            util::append_header_vary(&mut res, Ascii::new("Accept-Encoding".to_string()));
+            util::append_header_vary(&mut res.headers_mut(), Ascii::new("Accept-Encoding".to_string()));
 
             // Weaken ETag
             if let Some(etag) = res.headers().get::<header::ETag>() {

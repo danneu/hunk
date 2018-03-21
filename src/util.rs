@@ -1,7 +1,6 @@
 use std::u64;
 use std::time::Duration;
 
-use hyper::{Body, Response};
 use unicase::Ascii;
 
 pub fn duration_as_millis(d: Duration) -> u64 {
@@ -11,18 +10,17 @@ pub fn duration_as_millis(d: Duration) -> u64 {
 // If the Vary header is empty, then create it.
 // If it's Vary::Any, then do nothing. (i.e. will already Vary)
 // If it's Vary::Items, append to the array.
-pub fn append_header_vary(res: &mut Response<Body>, item: Ascii<String>) {
+pub fn append_header_vary(headers: &mut ::hyper::Headers, item: Ascii<String>) {
     use hyper::header::Vary;
 
-    match res.headers_mut().get_mut::<Vary>() {
+    match headers.get_mut::<Vary>() {
         Some(&mut Vary::Any) =>
             {},
         Some(&mut Vary::Items(ref mut xs)) =>
             xs.push(item),
         None =>
-            res.headers_mut().set(Vary::Items(vec![item]))
+            headers.set(Vary::Items(vec![item]))
     }
-
 }
 
 

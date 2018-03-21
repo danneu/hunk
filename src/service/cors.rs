@@ -54,7 +54,7 @@ impl<T> Service for Cors<T> where T: Service<Request = Request, Response = Respo
 
         if *req.method() == Method::Options {
             let mut res = Response::new();
-            util::append_header_vary(&mut res, Ascii::new("Origin".to_string()));
+            util::append_header_vary(&mut res.headers_mut(), Ascii::new("Origin".to_string()));
             res.headers_mut().set(header::ContentLength(0));
             res.headers_mut().set(header::ContentType(hyper::mime::TEXT_PLAIN_UTF_8));
 
@@ -115,7 +115,7 @@ impl<T> Service for Cors<T> where T: Service<Request = Request, Response = Respo
                 }
 
                 // Always set Vary header if CORS is enabled.
-                util::append_header_vary(&mut res, Ascii::new("Origin".to_string()));
+                util::append_header_vary(&mut res.headers_mut(), Ascii::new("Origin".to_string()));
 
                 res.headers_mut().set(header::AccessControlAllowOrigin::Value(format!("{}", req_origin)));
 
