@@ -17,9 +17,8 @@ pub fn append_header_vary(res: &mut Response<Body>, item: Ascii<String>) {
     match res.headers_mut().get_mut::<Vary>() {
         Some(&mut Vary::Any) =>
             {},
-        Some(&mut Vary::Items(ref mut xs)) => {
-            xs.push(item);
-        },
+        Some(&mut Vary::Items(ref mut xs)) =>
+            xs.push(item),
         None =>
             res.headers_mut().set(Vary::Items(vec![item]))
     }
