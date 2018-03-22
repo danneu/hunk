@@ -73,13 +73,18 @@ but some of them have required fields.
 
 ### log
 
+For now, if this key is present, common log formatted messages are printed to stdout for each request.
+
 - **(Unimplemented)** `path` (optional string): Destination file for log output. If missing, then logs will be written to stdout.
+- **(Unimplemented)** `format` (optional string): The pattern to use when formatting each log message. Default = Common Log Format.
 
 ### gzip
 
 Guesses file types by their file extension and compresses them if they are considered compressible.
 
 For example, .html is compressible but media files like .jpg and .mp4 are not.
+
+- `threshold` (optional int): Only gzip files if they are at least `threshold` bytes in length. Default = 1400.
 
 ### cache
 
@@ -91,7 +96,7 @@ Sets cache-control header for all successful resource responses.
 
 Add [Cross-Origin Resource Sharing](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) headers to response.
 
-- `origin` (optional array of strings). If none given, then all origins allowed. Ex: `["http://example.com]`. TODO: Require explicit opt-in with "*" or something.
+- `origin` (array of strings or "*" for wildcard). Ex: `["http://example.com]`.
 - `methods` (optional array of strings). Default: `["GET", "HEAD", "OPTIONS"]`.
 - `allowed_headers` (optional array of strings). Default: `[]`. Ex: `["X-Foo", "X-Bar"]`.
 - `exposed_headers` (optional array of strings). Default: `[]`. Ex: `["X-Exposed"]`.
@@ -100,10 +105,12 @@ Add [Cross-Origin Resource Sharing](https://developer.mozilla.org/en-US/docs/Web
 
 ### browse
 
-Display folder contents browser.
+Display folder explorer UI.
 
 When browse is enabled, a request for a folder will respond with an
 HTML page that links to all of the contained files.
+
+This page also includes a filter `<input type="text">` for fuzzy-searching filenames.
 
 ![browser screenshot](/img/browse.png)
 
