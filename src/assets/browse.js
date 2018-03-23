@@ -19,21 +19,16 @@ function fuzzysearch(needle, haystack) {
   return true
 }
 
-document.querySelector('#filter').addEventListener('keyup', (e) => {
-  var query = e.currentTarget.value
-  var entries = document.querySelectorAll('tbody tr.entry')
-  var len
+document.querySelector('#filter').addEventListener('keyup', function (e) {
+  var query = e.currentTarget.value.trim().toLowerCase()
+  var entries = document.querySelectorAll('tbody tr.entry td:first-child')
   for (var i = 0, len = entries.length; i < len; i++) {
-  var el = entries[i]
-  var filename = el.children[0].innerText.toLowerCase()
-  if (fuzzysearch(query, filename)) {
-    if (el.style.display !== 'table-row') {
-      el.style.display = 'table-row'
-    }
-  } else {
-    if (el.style.display !== 'none') {
-      el.style.display = 'none'
+    var el = entries[i]
+    var filename = el.textContent.toLowerCase()
+    if (fuzzysearch(query, filename)) {
+        el.parentNode.style.display = 'table-row'
+    } else {
+        el.parentNode.style.display = 'none'
     }
   }
-}
 })
