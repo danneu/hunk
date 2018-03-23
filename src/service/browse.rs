@@ -1,10 +1,9 @@
-use std::fs::File;
-use std::path::{Path};
+use std::path::Path;
 use std::io;
-use std::fs::{self, DirEntry};
+use std::fs;
 
 use futures::{future::ok, Future};
-use hyper::{header, Request, Response, Method, server::{Service}};
+use hyper::{self, header, Request, Response, Method, server::{Service}};
 use maud::{Markup, DOCTYPE, html, PreEscaped};
 
 use config::Browse as Config;
@@ -22,12 +21,12 @@ pub struct Browse<T> {
 }
 
 impl<T> Browse<T> {
-    pub fn new(config: &'static Option<Config>, root: &'static Path, next: T) -> Self where T: Service + 'static {
+    pub fn new(config: &'static Option<Config>, root: &'static Path, next: T) -> Self {
         Browse { config, root, next }
     }
 }
 
-impl<T> Service for Browse<T> where T: Service<Request = Request, Response = Response> + 'static {
+impl<T> Service for Browse<T> where T: Service<Request = Request, Response = Response, Error = hyper::Error> + 'static {
     type Request = T::Request;
     type Response = T::Response;
     type Error = T::Error;
@@ -51,26 +50,14 @@ impl<T> Service for Browse<T> where T: Service<Request = Request, Response = Res
             Some(path) => path,
         };
 
-        let file = match File::open(&entity_path) {
-            Err(_) => return Box::new(ok(response::not_found())),
-            Ok(file) => file,
-        };
-
-        match file.metadata() {
+        match handle_folder(self.root, entity_path.as_path()) {
+            Ok(response) =>
+                Box::new(ok(response)),
+            // Not a directory
+            Err(ref e) if e.raw_os_error() == Some(20) =>
+                Box::new(self.next.call(req)),
             Err(_) =>
                 Box::new(ok(response::internal_server_error())),
-            // Pass files to next ware
-            Ok(ref meta) if meta.is_file() =>
-                Box::new(self.next.call(req)),
-            Ok(ref meta) if meta.is_dir() =>
-                match handle_folder(self.root, entity_path.as_path()) {
-                    Err(_) =>
-                        Box::new(ok(response::internal_server_error())),
-                    Ok(response) =>
-                        Box::new(ok(response)),
-                },
-            Ok(_) =>
-                Box::new(ok(response::not_found())),
         }
     }
 }
@@ -82,9 +69,8 @@ struct FolderItem {
 }
 
 fn handle_folder(root: &Path, path: &Path) -> io::Result<Response> {
-    let entries: Vec<DirEntry> = fs::read_dir(path)?.collect::<io::Result<Vec<DirEntry>>>()?;
-
-    let entries: Vec<Option<FolderItem>> = entries.into_iter()
+    let mut entries: Vec<FolderItem> = fs::read_dir(path)?
+        .filter_map(|result| result.ok())
         .map(|entry| {
             fs::metadata(entry.path()).map(|metadata| {
                 let filename = match entry.path().file_name() {
@@ -92,23 +78,17 @@ fn handle_folder(root: &Path, path: &Path) -> io::Result<Response> {
                     Some(filename) => filename.to_string_lossy().to_string(),
                 };
 
-                // Skip dotfiles
-                // if filename.starts_with('.') {
-                //     return None
-                // }
-
                 let href = format!("/{}", entry.path().strip_prefix(root).unwrap().to_string_lossy());
 
                 Some(FolderItem { filename, href, metadata })
             })
-        }).collect::<io::Result<Vec<Option<FolderItem>>>>()?;
-
-    let mut entries: Vec<FolderItem> = entries.into_iter().filter_map(|x| x).collect();
+        })
+        .filter_map(|result| result.ok())
+        .filter_map(|item| item)
+        .collect();
 
     // Sort folders first, and the sort by filename a-z
-    entries.sort_unstable_by_key(|&FolderItem { ref filename, ref metadata, .. }| {
-        (!metadata.is_dir(), filename.to_lowercase())
-    });
+    entries.sort_unstable_by_key(|item| (!item.metadata.is_dir(), item.filename.to_lowercase()));
 
     let parent_href = path.parent()
         .filter(|parent| parent.starts_with(root))
