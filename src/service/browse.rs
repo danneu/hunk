@@ -11,6 +11,9 @@ use config::Browse as Config;
 use path;
 use response;
 
+const CSS: &str = include_str!("../assets/browse.css");
+const JS: &str = include_str!("../assets/browse.js");
+
 #[derive(Debug)]
 pub struct Browse<T> {
     config: &'static Option<Config>,
@@ -90,9 +93,9 @@ fn handle_folder(root: &Path, path: &Path) -> io::Result<Response> {
                 };
 
                 // Skip dotfiles
-                if filename.starts_with('.') {
-                    return None
-                }
+                // if filename.starts_with('.') {
+                //     return None
+                // }
 
                 let href = format!("/{}", entry.path().strip_prefix(root).unwrap().to_string_lossy());
 
@@ -121,15 +124,29 @@ fn handle_folder(root: &Path, path: &Path) -> io::Result<Response> {
         .with_body(html))
 }
 
-const CSS: &str = include_str!("../assets/browse.css");
-const JS: &str = include_str!("../assets/browse.js");
-
 fn render_html(parent_href: Option<String>, entries: Vec<FolderItem>) -> Markup {
+    let mut folder_count = 0;
+    let mut file_count = 0;
+
+    for item in &entries {
+        if item.metadata.is_dir() {
+            folder_count += 1
+        } else {
+            file_count += 1
+        }
+    }
+
     html! {
         (DOCTYPE)
         html lang="en" {
-            meta charset="UTF-8"
-            style (PreEscaped(CSS))
+            head {
+                meta charset="utf-8"
+                style (PreEscaped(CSS))
+            }
+            div {
+                (folder_count) " directories, "
+                (file_count) " files"
+            }
             input style="width: 50%" placeholder="Filter" id="filter";
             table style="width: 100%" {
                 thead {
@@ -154,7 +171,7 @@ fn render_html(parent_href: Option<String>, entries: Vec<FolderItem>) -> Markup 
                             }
                             td.size {
                                 @if metadata.is_dir() {
-                                    "--"
+                                    "—"
                                 } @else {
                                     (pretty_bytes(metadata.len() as f64))
                                 }
