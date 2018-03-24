@@ -7,10 +7,7 @@ sudo: required
 
 env:
   global:
-  - PROJECT_NAME=hunk
-  # trust uses crate name in its scripts
   - CRATE_NAME=hunk
-  - CHANNEL=nightly
 
 matrix:
  include:
