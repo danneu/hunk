@@ -1,11 +1,11 @@
-use std::net::{IpAddr};
+use std::net::IpAddr;
 
 use flate2;
-use futures::{Future};
+use futures::Future;
 use futures::{Sink, Stream};
 use futures_cpupool::CpuPool;
 use hyper::{self, header, Body, Client, Method, Request, Response, client::HttpConnector,
-            server::{Service}};
+            server::Service};
 use unicase::Ascii;
 
 use config::{self, Config, Site};
@@ -147,8 +147,7 @@ pub fn gzip(pool: &CpuPool, level: flate2::Compression, body: Body) -> Body {
 
     let (tx, body) = Body::pair();
 
-    pool.spawn(tx.send_all(stream.then(Ok)))
-        .forget();
+    pool.spawn(tx.send_all(stream.then(Ok))).forget();
 
     body
 }

@@ -1,10 +1,9 @@
-use std::net::{IpAddr};
+use std::net::IpAddr;
 
 use chrono::prelude::Utc;
-use futures::{Future};
+use futures::Future;
 use futures_cpupool::CpuPool;
-use hyper::{self, header, Client, Request, Response, client::HttpConnector,
-            server::{Service}};
+use hyper::{self, header, Client, Request, Response, client::HttpConnector, server::Service};
 
 use config::{self, Config, Site};
 use service;

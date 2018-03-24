@@ -1,12 +1,11 @@
 use std::io;
-use std::net::{IpAddr};
+use std::net::IpAddr;
 
 use futures::{Future, future::ok};
-use futures::{future::Either};
-use hyper::{self, header, Client, Request, Response, Uri, client::HttpConnector,
-            server::{Service}};
+use futures::future::Either;
+use hyper::{self, header, Client, Request, Response, Uri, client::HttpConnector, server::Service};
 use tokio_core::reactor::Handle;
-use tokio_core::reactor::{Timeout};
+use tokio_core::reactor::Timeout;
 
 use config::{Config, Site};
 use hop;

@@ -1,10 +1,11 @@
 use std::fs::File;
-use std::net::{IpAddr};
+use std::net::IpAddr;
 use std::path::Path;
 
 use futures::{Future, future::ok};
 use futures_cpupool::CpuPool;
-use hyper::{self, server::Service, header, Client, Method, Request, Response, StatusCode, client::HttpConnector};
+use hyper::{self, header, Client, Method, Request, Response, StatusCode, client::HttpConnector,
+            server::Service};
 
 use config::{Config, Site};
 use entity;

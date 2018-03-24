@@ -333,7 +333,6 @@ impl<'de> serde::Deserialize<'de> for Timeouts {
     where
         D: serde::Deserializer<'de>,
     {
-
         #[derive(Deserialize, Debug, Default)]
         struct Timeouts_ {
             connect: u64,

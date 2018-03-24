@@ -1,9 +1,9 @@
-use std::net::{IpAddr};
+use std::net::IpAddr;
 
 use futures::{Future, future::ok};
 use futures_cpupool::CpuPool;
 use hyper::{self, header, Client, Method, Request, Response, client::HttpConnector,
-            server::{Service}};
+            server::Service};
 use unicase::Ascii;
 
 use config::{self, Config, CorsOrigin, Site};

@@ -1,4 +1,3 @@
-
 //! Canned responses.
 
 use hyper::{header, Response, StatusCode};

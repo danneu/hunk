@@ -4,7 +4,7 @@ use atty;
 use env_logger;
 use futures::{Future, Stream};
 use futures_cpupool::CpuPool;
-use hyper::{Chunk, Client, server::{Http}};
+use hyper::{Chunk, Client, server::Http};
 use leak::Leak;
 use tokio_core::{net::TcpListener, reactor::Core};
 

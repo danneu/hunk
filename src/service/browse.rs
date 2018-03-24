@@ -1,13 +1,13 @@
 use std::fs;
 use std::io;
-use std::net::{IpAddr};
+use std::net::IpAddr;
 use std::path::Path;
 
 use futures::{Future, future::ok};
 use futures::{stream, Sink, Stream};
 use futures_cpupool::CpuPool;
-use hyper::{self, header, Chunk, Client, Method, Request, Response,
-            client::HttpConnector, server::{Service}};
+use hyper::{self, header, Chunk, Client, Method, Request, Response, client::HttpConnector,
+            server::Service};
 
 use config::{Config, Site};
 use path;
