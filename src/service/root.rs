@@ -62,7 +62,7 @@ impl Service for Root {
         };
 
         Box::new(next.call((site, req)).map(|mut res| {
-            res.headers_mut().set(header::Server::new("Hunk"));
+            res.headers_mut().set(header::Server::new("prox"));
             res
         }))
     }

@@ -1,6 +1,8 @@
-# hunk [![Build Status](https://travis-ci.org/danneu/hunk.svg?branch=master)](https://travis-ci.org/danneu/hunk)
+![prox](/img/prox.png)
 
-A simple, hobby, static-asset / proxy server built with Rust.
+# prox [![Build Status](https://travis-ci.org/danneu/prox.svg?branch=master)](https://travis-ci.org/danneu/prox)
+
+A simple reverse proxy + asset server built with Rust.
 
 ## Features
 
@@ -14,19 +16,19 @@ A simple, hobby, static-asset / proxy server built with Rust.
 
 ## Install
 
-Download a binary: <https://github.com/danneu/hunk/releases>.
+Download a binary: <https://github.com/danneu/prox/releases>.
 
 Or compile it yourself with Rust.
 
-    git clone git@github.com:danneu/hunk.git
-    cd hunk
+    git clone git@github.com:danneu/prox.git
+    cd prox
     cargo build --release
     
-A hunk executable is now available at `./target/release/hunk`.
+A prox executable is now available at `./target/release/prox`.
     
 ## Usage
 
-Whenever you run `hunk`, hunk will look for a `Hunk.toml` config file in the current directory.
+Whenever you run `prox`, prox will look for a `Hunk.toml` config file in the current directory.
 
 Here's the minimal config:
 
@@ -73,7 +75,7 @@ have CORS enabled but have whitelisted all origins.
 
 ```toml
 [server]
-# (Required) The address hunk will listen on
+# (Required) The address prox will listen on
 bind = "localhost:3000"
 
 [[site]]
@@ -132,7 +134,7 @@ Optional:
 - `url` (url string): Requests to this site will be proxied to this `url` where another server will handle it.
 - `root` (file path string): Hunk will try to serve the request from this directory of static assets.
 - `gzip` (object): Apply the default gzip handler to responses. Hunk will negotiate an encoding.
-    - `threshold` (optional int): The minimum byte length for hunk to gzip. Default = 1400.
+    - `threshold` (optional int): The minimum byte length for prox to gzip. Default = 1400.
     
         ```toml
         [[site]]
@@ -184,7 +186,7 @@ Optional:
         
 ## Development
 
-    git clone https://github.com/danneu/hunk.git
-    cd hunk
+    git clone https://github.com/danneu/prox.git
+    cd prox
     cargo install cargo-watch
-    CARGO_INCREMENTAL=1 RUST_LOG="hunk" cargo watch -x 'run --bin hunk'
+    CARGO_INCREMENTAL=1 RUST_LOG="prox" cargo watch -x 'run --bin prox'

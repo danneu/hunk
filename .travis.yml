@@ -7,7 +7,7 @@ sudo: required
 
 env:
   global:
-  - CRATE_NAME=hunk
+  - CRATE_NAME=prox
 
 matrix:
  include:
@@ -46,7 +46,7 @@ deploy:
   skip_cleanup: true
   on:
     tags: true
-    repo: danneu/hunk
+    repo: danneu/prox
 
 
 cache: cargo

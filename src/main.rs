@@ -1,4 +1,4 @@
-extern crate hunk;
+extern crate prox;
 extern crate toml;
 extern crate unicase;
 
@@ -8,7 +8,7 @@ use std::env::args;
 use std::fs::File;
 use std::io::{Read};
 
-use hunk::Config;
+use prox::Config;
 
 fn read_config<P: AsRef<Path>>(path: P) -> Result<Config, String> {
     let mut f = File::open(path).map_err(|e| e.to_string())?;
@@ -39,12 +39,12 @@ fn main() {
         },
         // Path not given, so try default config location.
         None => {
-            println!("...checking for ./Hunk.toml file");
-            PathBuf::from("Hunk.toml")
+            println!("...checking for ./Prox.toml file");
+            PathBuf::from("Prox.toml")
         }
     };
 
     let config = read_config(path).expect("...failed to load config file");
 
-    hunk::serve(config)
+    prox::serve(config)
 }

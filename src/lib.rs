@@ -25,7 +25,6 @@ extern crate unicase;
 extern crate serde;
 #[macro_use] extern crate serde_derive;
 extern crate toml;
-extern crate regex;
 
 use std::sync::{Mutex, Arc};
 use std::collections::HashMap;
@@ -111,7 +110,7 @@ pub fn serve(config: Config) {
     if atty::is(atty::Stream::Stdout) {
         boot_message::pretty(config);
     } else {
-        info!("[hunk] listening on {}", config.server.bind);
+        info!("[prox] listening on {}", config.server.bind);
     }
 
     core.run(future).unwrap()

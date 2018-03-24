@@ -6,7 +6,6 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use serde;
-use regex::Regex;
 use unicase::Ascii;
 use hyper::{header, Method};
 use url::{self, Url};

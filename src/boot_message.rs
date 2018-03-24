@@ -104,7 +104,7 @@ pub fn pretty(config: &Config) {
     println!();
     println!(
         "{} {} on {}",
-        "[hunk]".bright_white().bold(),
+        "[prox]".bright_white().bold(),
         "listening".bright_green().bold(),
         config.server.bind.to_string().replace("127.0.0.1", "localhost").bright_white().bold()
     );
