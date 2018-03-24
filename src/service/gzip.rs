@@ -1,6 +1,6 @@
 use std::sync::{Mutex, Arc};
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
+use std::hash::{Hash};
 use std::net::{SocketAddr, IpAddr};
 
 use futures_cpupool::CpuPool;
@@ -28,6 +28,7 @@ pub struct Gzip {
     // For downstream,
     pub client: &'static Client<HttpConnector>,
     pub remote_ip: IpAddr,
+    pub handle: &'static ::tokio_core::reactor::Handle,
 }
 
 impl Service for Gzip {
@@ -41,6 +42,7 @@ impl Service for Gzip {
         let pool = self.pool;
         let client = self.client;
         let remote_ip = self.remote_ip;
+        let handle = self.handle;
 
         let next = move || {
             service::cors::Cors {
@@ -48,6 +50,7 @@ impl Service for Gzip {
                 pool,
                 client,
                 remote_ip,
+                handle,
             }
         };
 
@@ -65,7 +68,7 @@ impl Service for Gzip {
 
         let req_accept_encoding = req.headers().get::<header::AcceptEncoding>().cloned();
 
-        Box::new(next().call((site, req)).map(move |mut res| {
+        Box::new(next().call((site, req)).map(move |res| {
             handle_response(pool, res, opts, req_accept_encoding)
         }))
     }

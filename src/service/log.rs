@@ -6,7 +6,7 @@ use std::net::{SocketAddr, IpAddr};
 use futures_cpupool::CpuPool;
 use chrono::prelude::Utc;
 use tokio_core::reactor::Core;
-use futures::{Sink, Stream};
+use futures::{Sink};
 use futures::{future, Future};
 use hyper::{self, Request, Response, server::{Http, Service}, header, Uri, Client, client::HttpConnector, Method, Body};
 use url::Url;
@@ -29,6 +29,8 @@ pub struct Log {
     // For downstream,
     pub client: &'static Client<HttpConnector>,
     pub remote_ip: IpAddr,
+    pub handle: &'static ::tokio_core::reactor::Handle,
+
 }
 
 impl Service for Log {
@@ -42,6 +44,7 @@ impl Service for Log {
         let pool = self.pool;
         let client = self.client;
         let remote_ip = self.remote_ip;
+        let handle = self.handle;
 
         let next = move || {
             service::gzip::Gzip {
@@ -49,6 +52,7 @@ impl Service for Log {
                 pool,
                 client,
                 remote_ip,
+                handle,
             }
         };
 

@@ -21,6 +21,7 @@ pub fn serve(config: Config) {
     let mut core = Core::new().unwrap();
     let handle = core.handle();
 
+    let handle = Box::new(handle).leak();
     let pool = Box::new(CpuPool::new(1)).leak();
     let config = Box::new(config.clone()).leak();
     let client = Box::new(Client::new(&handle)).leak();
@@ -45,6 +46,7 @@ pub fn serve(config: Config) {
             sites,
             remote_ip,
             pool,
+            handle,
         }
     };
 

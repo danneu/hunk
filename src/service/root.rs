@@ -23,6 +23,7 @@ pub struct Root {
     pub remote_ip: IpAddr,
     pub client: &'static Client<HttpConnector>,
     pub sites: &'static HashMap<Host, Site>,
+    pub handle: &'static ::tokio_core::reactor::Handle,
 }
 
 impl Service for Root {
@@ -38,7 +39,6 @@ impl Service for Root {
             return Box::new(ok(response::bad_request("missing host header")))
         }
 
-        let mut req = req;
         let req = fix_host_header(req);
 
         let site = req
@@ -59,6 +59,7 @@ impl Service for Root {
             pool: self.pool,
             client: self.client,
             remote_ip: self.remote_ip,
+            handle: self.handle,
         };
 
         Box::new(next.call((site, req)).map(|mut res| {

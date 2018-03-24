@@ -6,7 +6,7 @@ use std::net::{SocketAddr, IpAddr};
 use futures_cpupool::CpuPool;
 use chrono::prelude::Utc;
 use tokio_core::reactor::Core;
-use futures::{Sink, Stream};
+use futures::{Sink};
 use futures::{future::ok, Future};
 use hyper::{self, Request, Response, server::{Http, Service}, header, Uri, Client, client::HttpConnector, Method, Body};
 use url::Url;
@@ -29,6 +29,7 @@ pub struct Cors {
     // For downstream,
     pub client: &'static Client<HttpConnector>,
     pub remote_ip: IpAddr,
+    pub handle: &'static ::tokio_core::reactor::Handle,
 }
 
 impl Service for Cors {
@@ -42,6 +43,7 @@ impl Service for Cors {
         let pool = self.pool;
         let client = self.client;
         let remote_ip = self.remote_ip;
+        let handle = self.handle;
 
         let next = move || {
             service::browse::Browse {
@@ -49,6 +51,7 @@ impl Service for Cors {
                 pool,
                 client,
                 remote_ip,
+                handle,
             }
         };
 

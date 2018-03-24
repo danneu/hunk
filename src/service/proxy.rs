@@ -13,6 +13,7 @@ use futures::{future::ok, Future};
 use hyper::{self, Request, Response, server::{Http, Service}, header, Uri, Client, client::HttpConnector};
 use url::Url;
 use unicase::Ascii;
+use tokio_core::reactor::Handle;
 
 use config::{Config, Site};
 use response;
@@ -27,6 +28,7 @@ pub struct Proxy {
     pub client: &'static Client<HttpConnector>,
     pub remote_ip: IpAddr,
     pub config: &'static Config,
+    pub handle: &'static Handle,
 }
 
 /// Return a new headers map with any hop-to-hop headers removed.
@@ -87,9 +89,9 @@ impl Service for Proxy {
 
         let conn_duration = self.config.server.timeouts.connect.clone();
 
-        let conn_timeout = match Timeout::new(conn_duration, self.client.handle()) {
+        let conn_timeout = match Timeout::new(conn_duration, &self.handle) {
             Ok(x) => x,
-            Err(e) => return Box::new(ok(response::internal_server_error())),
+            Err(_) => return Box::new(ok(response::internal_server_error())),
         };
 
         // The future of the origin's response
@@ -102,8 +104,8 @@ impl Service for Proxy {
             });
 
         let future = res_future.select2(conn_timeout).then(|result| match result {
-            Ok(Either::A((res, _))) => Ok(res),
-            Ok(Either::B((_timeout_error, res))) => {
+            Ok(Either::A((res, _err))) => Ok(res),
+            Ok(Either::B((_timeout_error, _res))) => {
                 // TODO: Look into future lifecycle. Surely I don't need to drop(res_future) myself?
                 Err(hyper::Error::Io(io::Error::new(
                     io::ErrorKind::TimedOut,
@@ -111,7 +113,7 @@ impl Service for Proxy {
                 )))
             },
             Err(Either::A((res_error, _))) => Err(res_error),
-            Err(Either::B((timeout_error, res))) => Err(From::from(timeout_error)),
+            Err(Either::B((timeout_error, _res))) => Err(From::from(timeout_error)),
         });
 
         Box::new(future)

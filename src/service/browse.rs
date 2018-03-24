@@ -32,6 +32,7 @@ pub struct Browse {
     // For downstream,
     pub client: &'static Client<HttpConnector>,
     pub remote_ip: IpAddr,
+    pub handle: &'static ::tokio_core::reactor::Handle,
 }
 
 impl Service for Browse {
@@ -45,6 +46,7 @@ impl Service for Browse {
         let pool = self.pool;
         let client = self.client;
         let remote_ip = self.remote_ip;
+        let handle = self.handle;
 
         let next = move || {
             service::serve::Serve {
@@ -52,6 +54,7 @@ impl Service for Browse {
                 pool,
                 client,
                 remote_ip,
+                handle,
             }
         };
 

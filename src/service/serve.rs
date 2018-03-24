@@ -32,6 +32,7 @@ pub struct Serve {
     // For downstream,
     pub client: &'static Client<HttpConnector>,
     pub remote_ip: IpAddr,
+    pub handle: &'static ::tokio_core::reactor::Handle,
 }
 
 fn handle_request_sync(pool: CpuPool, root: &'static Path, req: Request) -> (Request, Option<Response>) {
@@ -164,11 +165,13 @@ impl Service for Serve {
         let client = self.client;
         let remote_ip = self.remote_ip;
         let config = self.config;
+        let handle = self.handle;
 
         let next = move || service::proxy::Proxy {
             client,
             remote_ip,
             config,
+            handle,
         };
 
         // Short-circuit if root is not set.
