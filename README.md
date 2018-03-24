@@ -2,8 +2,6 @@
 
 A simple, hobby, static-asset / proxy server built with Rust.
 
-![terminal screenshot](/img/splash.png)
-
 ## Features
 
 - [x] Lightweight
