@@ -48,10 +48,6 @@ impl Default for Server {
     }
 }
 
-fn default_root() -> PathBuf {
-    PathBuf::from(".").canonicalize().unwrap()
-}
-
 fn default_bind() -> String {
     format!("127.0.0.1:{}", default_port())
 }
@@ -124,7 +120,7 @@ impl<'de> serde::Deserialize<'de> for Site {
             cors: Option<Cors>,
         }
 
-        let mut input: Site_ = Site_::deserialize(deserializer)?;
+        let input: Site_ = Site_::deserialize(deserializer)?;
 
         // FIXME: This file is a mess.
         let url = match input.clone().url.map(|url| url.parse::<Url>()) {
@@ -169,7 +165,7 @@ impl<'de> serde::Deserialize<'de> for Host {
     {
         use serde::de::Error;
 
-        let mut input: String = String::deserialize(deserializer)?;
+        let input: String = String::deserialize(deserializer)?;
 
         match input.parse::<Host>() {
            Err(e) =>
@@ -201,7 +197,7 @@ impl<'de> serde::Deserialize<'de> for Server {
         let input = Http_::deserialize(deserializer)?;
 
         // Allow localhost short-hand
-        let mut bind = input.bind.replace("localhost", "127.0.0.1");
+        let bind = input.bind.replace("localhost", "127.0.0.1");
 
         let bind: SocketAddr = match bind.parse::<SocketAddr>() {
             Err(e) => {
@@ -215,7 +211,7 @@ impl<'de> serde::Deserialize<'de> for Server {
 
         Ok(Server {
             bind,
-            timeouts: input.timeouts.unwrap_or_else(|| Timeouts::default())
+            timeouts: input.timeouts.unwrap_or_else(Timeouts::default)
         })
     }
 }
@@ -349,7 +345,7 @@ impl<'de> serde::Deserialize<'de> for Timeouts {
             connect: u64,
         }
 
-        let mut input = Timeouts_::deserialize(deserializer)?;
+        let input = Timeouts_::deserialize(deserializer)?;
 
         let connect = Duration::from_millis(input.connect);
 

@@ -72,7 +72,7 @@ impl Service for Proxy {
                 url
         };
 
-        let uri = dest_url.join(&req.path()).ok()
+        let uri = dest_url.join(req.path()).ok()
             .and_then(|url| url.to_string().parse::<Uri>().ok());
 
         let uri = match uri {
@@ -87,9 +87,9 @@ impl Service for Proxy {
 
         // Set up timeouts and make the proxied request
 
-        let conn_duration = self.config.server.timeouts.connect.clone();
+        let conn_duration = self.config.server.timeouts.connect;
 
-        let conn_timeout = match Timeout::new(conn_duration, &self.handle) {
+        let conn_timeout = match Timeout::new(conn_duration, self.handle) {
             Ok(x) => x,
             Err(_) => return Box::new(ok(response::internal_server_error())),
         };

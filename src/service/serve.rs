@@ -74,11 +74,11 @@ fn handle_request_sync(pool: CpuPool, root: &'static Path, req: Request) -> (Req
 
     let entity_etag = entity.etag(&entity::ETagKind::Strong);
 
-    if is_not_modified(&entity, &req.headers(), &entity_etag) {
+    if is_not_modified(&entity, req.headers(), &entity_etag) {
         return (req, Some(response::not_modified(entity_etag)))
     }
 
-    if is_precondition_failed(&entity, &req.headers(), &entity_etag) {
+    if is_precondition_failed(&entity, req.headers(), &entity_etag) {
         return (req, Some(response::precondition_failed()))
     }
 
@@ -185,7 +185,7 @@ impl Service for Serve {
 
         // See if path hits a static file.
 
-        let future = handle_request(&self.pool, root.as_path(), req);
+        let future = handle_request(self.pool, root.as_path(), req);
 
         Box::new(future.then(move |result| {
             match result {

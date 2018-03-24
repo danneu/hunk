@@ -69,12 +69,12 @@ impl Service for Gzip {
         let req_accept_encoding = req.headers().get::<header::AcceptEncoding>().cloned();
 
         Box::new(next().call((site, req)).map(move |res| {
-            handle_response(pool, res, opts, req_accept_encoding)
+            handle_response(pool, res, opts, &req_accept_encoding)
         }))
     }
 }
 
-fn handle_response(pool: &CpuPool, mut res: Response, opts: &config::Gzip, req_accept_encoding: Option<header::AcceptEncoding>) -> Response {
+fn handle_response(pool: &CpuPool, mut res: Response, opts: &config::Gzip, req_accept_encoding: &Option<header::AcceptEncoding>) -> Response {
     // Only compress if successful response
     if !res.status().is_success() {
         return res
@@ -130,7 +130,7 @@ fn handle_response(pool: &CpuPool, mut res: Response, opts: &config::Gzip, req_a
     Response::new()
         .with_status(res.status())
         .with_headers(res.headers().clone())
-        .with_body(gzip(&pool, flate2::Compression::new(1), res.body()))
+        .with_body(gzip(pool, flate2::Compression::new(1), res.body()))
 }
 
 /// Transforms the body into a new one where all of its chunks will be gzipped.

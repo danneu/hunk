@@ -68,7 +68,7 @@ impl Service for Log {
         let req2 = clone_req(&req);
 
         Box::new(next().call((site, req)).map(move |res| {
-            log(remote_ip, &opts, &req2, &res);
+            log(remote_ip, opts, &req2, &res);
             res
         }))
     }

@@ -10,6 +10,7 @@ pub fn bad_request(msg: &'static str) -> Response {
         .with_body(msg)
 }
 
+#[allow(dead_code)]
 pub fn method_not_allowed() -> Response {
     const TEXT: &str = "Only GET, HEAD, OPTIONS allowed";
     Response::new()

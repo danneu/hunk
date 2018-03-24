@@ -15,7 +15,7 @@ use boot_message;
 /// Start server with given configuration.
 ///
 /// Server will bind to a port and block.
-pub fn serve(config: Config) {
+pub fn serve(config: &Config) {
     env_logger::init();
 
     let mut core = Core::new().unwrap();
@@ -24,7 +24,7 @@ pub fn serve(config: Config) {
     let handle = Box::new(handle).leak();
     let pool = Box::new(CpuPool::new(1)).leak();
     let config = Box::new(config.clone()).leak();
-    let client = Box::new(Client::new(&handle)).leak();
+    let client = Box::new(Client::new(handle)).leak();
     let sites = {
         let mut map = HashMap::new();
         for site in config.clone().sites {
@@ -38,7 +38,7 @@ pub fn serve(config: Config) {
     let mut http: Http<Chunk> = Http::new();
     http.sleep_on_errors(true);
 
-    let listener = TcpListener::bind(&config.server.bind, &handle).unwrap();
+    let listener = TcpListener::bind(&config.server.bind, handle).unwrap();
     let factory = move |remote_ip| {
         service::root::Root {
             client,

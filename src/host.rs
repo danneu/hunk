@@ -11,7 +11,7 @@ use url::Url;
 // https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-14#section-9.4
 // https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-14#section-4.2
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Host {
     pub hostname: String,
     pub port: Option<u16>,
@@ -44,12 +44,12 @@ impl Host {
     }
 }
 
-impl Hash for Host {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.hostname.hash(state);
-        self.port.hash(state);
-    }
-}
+//impl Hash for Host {
+//    fn hash<H: Hasher>(&self, state: &mut H) {
+//        self.hostname.hash(state);
+//        self.port.hash(state);
+//    }
+//}
 
 // e.g. localhost:3000 or localhost
 impl FromStr for Host {
@@ -62,9 +62,7 @@ impl FromStr for Host {
             {
                 Ok((Some(hostname), port)) =>
                     Ok(Host::new(hostname, port)),
-                Ok((None, _)) =>
-                    Err(HostParseError(())),
-                Err(_) =>
+                Ok((None, _)) | Err(_) =>
                     Err(HostParseError(())),
             }
     }
