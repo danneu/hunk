@@ -59,7 +59,7 @@ fn default_port() -> u32 {
 }
 
 /// A Site tells prox how to handle requests that match the host.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Site {
     pub host: Vec<Host>,
     pub url: Option<Url>,
