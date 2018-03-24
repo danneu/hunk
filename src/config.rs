@@ -135,8 +135,9 @@ impl<'de> serde::Deserialize<'de> for Origin {
         Ok(Origin {
             host,
             url,
-            // TODO: Handle canonicalize failure
-            root: input.root.map(|p| p.canonicalize().unwrap()),
+            // It's okay if canonicalize fails. It's just to improve the boot message.
+            // The directory doesn't have to exist. It can at some future point in time.
+            root: input.root.and_then(|p| p.canonicalize().ok()),
             gzip: input.gzip,
             browse: input.browse,
             log: input.log,
