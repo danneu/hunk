@@ -1,0 +1,120 @@
+
+/// The boot message is the pretty heads-up that prints on server boot if stdout is tty.
+
+use colored::Colorize;
+
+use config::{self, Config, Origin};
+use host::Host;
+
+fn pretty_origin(origin: &Origin) {
+    match origin.url {
+        None => {
+            println!(
+                "vhost: {hosts}",
+                hosts = origin.host.iter()
+                    .map(Host::to_string)
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            );
+        },
+        Some(ref url) => {
+            println!(
+                "vhost: {hosts} -> {dest}",
+                hosts = origin.host.iter()
+                    .map(Host::to_string)
+                    .collect::<Vec<_>>()
+                    .join(", "),
+                dest = url
+            );
+        },
+    };
+
+    // GZIP
+
+    println!(
+        "- gzip:   {}",
+        match origin.gzip.as_ref() {
+            None => "off".to_string(),
+            Some(_) => format!("{}", "on".green().bold()),
+        }
+    );
+
+    // CORS
+
+//    println!(
+//        "- cors: {}",
+//        match origin.cors.as_ref() {
+//            None => "off".red().bold().to_string(),
+//            Some(opts) => {
+//                let mut s = format!("{}", "on".green().bold());
+//                s.push(' ');
+//                let origin = match opts.origin {
+//                    origin::Origin::Any =>
+//                        "*".to_string(),
+//                    origin::Origin::Few(ref urls) =>
+//                        format!("{:?}", urls.iter().map(|u| format!("{}", u)).collect::<Vec<String>>()),
+//                };
+//                s.push_str(format!("origin={}", origin.bold()).as_ref());
+//                s
+//            }
+//        }
+//    );
+
+    //  LOG
+
+    println!(
+        "- log:    {}",
+        match origin.log {
+            None => "off".to_string(),
+            Some(_) => {
+                let mut s = format!("{}", "on".green().bold());
+                s.push(' ');
+                s.push_str(&format!("dst={}", "stdout".bold()));
+                s
+            }
+        }
+    );
+
+    // BROWSE
+
+    println!(
+        "- browse: {}",
+        match origin.browse {
+            None => "off".to_string(),
+            Some(_) => format!("{}", "on".green().bold()),
+        }
+    );
+
+    // ROOT
+
+    println!(
+        "- root:   {}",
+        match origin.root {
+            None => "off".to_string(),
+            Some(ref root) =>
+                format!(
+                    "{} {}",
+                    "on".green().bold(),
+                    root.to_str().unwrap_or("").to_string().bright_white()
+                )
+        }
+    );
+}
+
+pub fn pretty(config: &Config) {
+    // SERVER
+
+    println!();
+    println!(
+        "{} {} on {}",
+        "[hunk]".bright_white().bold(),
+        "listening".bright_green().bold(),
+        config.server.bind.to_string().replace("127.0.0.1", "localhost").bright_white().bold()
+    );
+
+    // ORIGINS
+
+    for origin in &config.origins {
+        pretty_origin(origin)
+    }
+}

@@ -1,0 +1,27 @@
+[package]
+name = "hunk"
+version = "0.0.0"
+authors = ["Dan Neumann <danrodneu@gmail.com>"]
+
+[dependencies]
+url = "*"
+hyper = "*"
+tokio = "*"
+tokio-core = "*"
+futures = "*"
+log = "*"
+percent-encoding = "*"
+env_logger = "*"
+leak = "*"
+futures-cpupool = "*"
+lazy_static = "*"
+flate2 = "*"
+atty = "*"
+unicase = "*"
+colored = "*"
+chrono = "*"
+# Config parsing
+serde = "1.0"
+serde_derive = "1.0"
+toml = "*"
+regex = "*"
