@@ -34,7 +34,7 @@ fn main() {
             path,
         // Path given but it was not found
         Some(Err(e)) => {
-            eprintln!("...failed to load config file: {}", e);
+            eprintln!("...failed to load config file: {:?}", e);
             process::exit(1);
         },
         // Path not given, so try default config location.
@@ -44,7 +44,13 @@ fn main() {
         }
     };
 
-    let config = read_config(path).expect("...failed to load config file");
+    let config = match read_config(path) {
+        Ok(x) => x,
+        Err(e) => {
+            eprintln!("...failed to find or load config file: {:?}", e);
+            process::exit(1);
+        }
+    };
 
     prox::serve(config)
 }

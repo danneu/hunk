@@ -114,4 +114,8 @@ pub fn pretty(config: &Config) {
     for site in &config.sites {
         pretty_site(site)
     }
+
+    if config.sites.is_empty() {
+        println!("- No sites configured")
+    }
 }

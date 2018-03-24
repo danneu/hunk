@@ -6,6 +6,11 @@ use std::str::FromStr;
 use hyper::header;
 use url::Url;
 
+// Note: Case-insensitive
+// https://tools.ietf.org/html/rfc3986#section-3.2.2
+// https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-14#section-9.4
+// https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-14#section-4.2
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Host {
     pub hostname: String,
@@ -77,6 +82,6 @@ impl fmt::Display for HostParseError {
 
 impl Error for HostParseError {
     fn description(&self) -> &str {
-        "host must be \"address[:port]\" or \"domain[:port]\""
+        "host must be \"ipaddress[:port]\" or \"domain[:port]\""
     }
 }

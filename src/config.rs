@@ -16,6 +16,7 @@ use host::Host;
 pub struct Config {
     pub server: Server,
     #[serde(rename = "site")]
+    #[serde(default)]
     pub sites: Vec<Site>,
 }
 
