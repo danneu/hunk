@@ -21,33 +21,30 @@ fn main() {
     // Parse first argv as path.
     // If given, then it must exist.
     let path = args()
-        .nth(1);
+        .nth(1)
+        .map(PathBuf::from);
 
-    println!("path from argv: {:?}", path);
+    if let Some(ref path) = path {
+       println!("...loading config file from: {:?}", path);
+    }
 
-    let path = path
-        .map(PathBuf::from)
-        .map(|p| p.canonicalize());
-
-    let path = match path {
+    let path = match path.map(|p| p.canonicalize()) {
         // Path was given and it existed
         Some(Ok(path)) =>
             path,
         // Path given but it was not found
         Some(Err(e)) => {
-            eprintln!("could not open or find config path: {}", e);
+            eprintln!("...failed to load config file: {}", e);
             process::exit(1);
         },
         // Path not given, so try default config location.
         None => {
-            println!("attempting to load ./Hunk.toml if there is one");
+            println!("...checking for ./Hunk.toml file");
             PathBuf::from("Hunk.toml")
         }
     };
 
-    let config = read_config(path)
-        .map_err(|e| println!("failed to load config: {}", e))
-        .unwrap();
+    let config = read_config(path).expect("...failed to load config file");
 
     hunk::serve(config)
 }
