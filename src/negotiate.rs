@@ -21,10 +21,10 @@ pub fn any_match(header_value: Option<&header::IfMatch>, etag: &header::EntityTa
     }
 }
 
-// Returns Ok(Encoding) only if it's one of the compressions we support. Else we should not compress.
+// Returns Some(Gzip) if we should compress.
 //
 // https://tools.ietf.org/html/rfc7231#section-5.3.4
-pub fn negotiate_encoding(
+pub fn encoding(
     header_value: Option<&header::AcceptEncoding>,
 ) -> Option<header::Encoding> {
     let qis = match header_value {
@@ -51,10 +51,10 @@ pub fn negotiate_encoding(
 
     let gzip_q = gzip_q.or(star_q).unwrap_or(header::q(0));
 
-    // "If the representation has no content-coding, then it is
+    // If the representation has no content-coding, then it is
     // acceptable by default unless specifically excluded by the
     // Accept-Encoding field stating either "identity;q=0" or "*;q=0"
-    // without a more specific entry for "identity"."
+    // without a more specific entry for "identity".
     let identity_q = identity_q.or(star_q).unwrap_or(header::q(1));
 
     if gzip_q > header::q(0) && gzip_q >= identity_q {
@@ -66,23 +66,19 @@ pub fn negotiate_encoding(
 
 #[test]
 fn test_negotiate_encoding() {
-    use hyper::header::{Header, Raw, AcceptEncoding};
+    use hyper::header::{Header, Raw, AcceptEncoding, Encoding::Gzip};
     let parse = |s: &[u8]| AcceptEncoding::parse_header(&Raw::from(&s[..])).unwrap();
-
-    // GZIP
-    let ae = parse(b"compress, gzip");
-    assert_eq!(negotiate_encoding(Some(&ae)), Some(header::Encoding::Gzip));
-
-    let ae = parse(b"compress;q=0.5, gzip;q=1.0");
-    assert_eq!(negotiate_encoding(Some(&ae)), Some(header::Encoding::Gzip));
-
-    let ae = parse(b"gzip;q=1.0, identity; q=0.5, *;q=0");
-    assert_eq!(negotiate_encoding(Some(&ae)), Some(header::Encoding::Gzip));
-
-    // NONE
-    let ae = parse(b"identity;q=0");
-    assert_eq!(negotiate_encoding(Some(&ae)), None);
-
-    let ae = parse(b"*;q=0");
-    assert_eq!(negotiate_encoding(Some(&ae)), None);
+    assert_eq!(encoding(Some(&parse(b"compress, gzip"))), Some(Gzip));
+    assert_eq!(encoding(Some(&parse(b"compress;q=0.5, gzip;q=1.0"))), Some(Gzip));
+    assert_eq!(encoding(Some(&parse(b"gzip;q=1.0, identity; q=0.5, *;q=0"))), Some(Gzip));
+    assert_eq!(encoding(Some(&parse(b"identity;q=0"))), None);
+    assert_eq!(encoding(Some(&parse(b"*;q=0"))), None);
+    assert_eq!(encoding(Some(&parse(b"gzip;q=0.001"))), Some(Gzip));
+    assert_eq!(encoding(Some(&parse(b"gzip;q=0"))), None);
+    assert_eq!(encoding(Some(&parse(b"*"))), Some(Gzip));
+    assert_eq!(encoding(Some(&parse(b"gzip;q=0, *"))), None);
+    assert_eq!(encoding(Some(&parse(b"identity;q=0, *"))), Some(Gzip));
+    assert_eq!(encoding(Some(&parse(b"identity;q=0.5, gzip;q=1.0"))), Some(Gzip));
+    assert_eq!(encoding(Some(&parse(b"identity;q=1.0, gzip;q=0.5"))), None);
+    assert_eq!(encoding(Some(&parse(b"*;q=0"))), None);
 }

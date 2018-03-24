@@ -18,7 +18,7 @@ use config::{self, Config, Site};
 use hop;
 use host::Host;
 use mime;
-use negotiation;
+use negotiate;
 use response;
 use service;
 use util;
@@ -97,7 +97,7 @@ fn handle_response(
     };
 
     let should_compress = mime::is_mime_compressible(mime) && content_length >= opts.threshold && {
-        let encoding = negotiation::negotiate_encoding(req_accept_encoding.as_ref());
+        let encoding = negotiate::encoding(req_accept_encoding.as_ref());
         encoding == Some(header::Encoding::Gzip)
     };
 

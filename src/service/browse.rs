@@ -21,7 +21,7 @@ use config::{self, Config, Site};
 use hop;
 use host::Host;
 use mime;
-use negotiation;
+use negotiate;
 use path;
 use response;
 use service;

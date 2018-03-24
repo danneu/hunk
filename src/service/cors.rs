@@ -19,7 +19,7 @@ use config::{self, Config, CorsOrigin, Site};
 use hop;
 use host::Host;
 use mime;
-use negotiation;
+use negotiate;
 use response;
 use service;
 use util;

@@ -42,7 +42,7 @@ mod etag;
 mod hop;
 mod host;
 mod mime;
-mod negotiation;
+mod negotiate;
 mod path;
 mod range;
 mod response;

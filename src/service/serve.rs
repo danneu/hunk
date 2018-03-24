@@ -19,7 +19,7 @@ use config::{Config, Site};
 use entity;
 use host::Host;
 use mime;
-use negotiation;
+use negotiate;
 use path;
 use range;
 use response;
@@ -211,7 +211,7 @@ fn is_not_modified(
     headers: &header::Headers,
     entity_etag: &header::EntityTag,
 ) -> bool {
-    if !negotiation::none_match(headers.get::<header::IfNoneMatch>(), entity_etag) {
+    if !negotiate::none_match(headers.get::<header::IfNoneMatch>(), entity_etag) {
         true
     } else if let Some(&header::IfModifiedSince(since)) = headers.get() {
         entity.last_modified() <= since
@@ -225,7 +225,7 @@ fn is_precondition_failed(
     headers: &header::Headers,
     entity_etag: &header::EntityTag,
 ) -> bool {
-    if !negotiation::any_match(headers.get::<header::IfMatch>(), entity_etag) {
+    if !negotiate::any_match(headers.get::<header::IfMatch>(), entity_etag) {
         true
     } else if let Some(&header::IfUnmodifiedSince(since)) = headers.get() {
         entity.last_modified() > since
