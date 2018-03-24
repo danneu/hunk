@@ -1,6 +1,7 @@
-use hyper::{header, Response, StatusCode};
 
-// CANNED RESPONSES
+//! Canned responses.
+
+use hyper::{header, Response, StatusCode};
 
 pub fn bad_request(msg: &'static str) -> Response {
     Response::new()

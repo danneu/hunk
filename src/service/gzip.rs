@@ -89,14 +89,13 @@ fn handle_response(
         Some(&header::ContentType(ref mime)) => mime,
     };
 
-    // Content-Length is always set by Root service
-    // TODO: Re-check this old comment
-    let content_length = match res.headers().get::<header::ContentLength>() {
-        None => return res,
-        Some(&header::ContentLength(length)) => length,
+    // We'll consider an entity over the size threshold if their size is unknown.
+    let over_threshold = match res.headers().get::<header::ContentLength>() {
+        None => true,
+        Some(&header::ContentLength(length)) => length >= opts.threshold,
     };
 
-    let should_compress = mime::is_mime_compressible(mime) && content_length >= opts.threshold && {
+    let should_compress = mime::is_mime_compressible(mime) && over_threshold && {
         let encoding = negotiate::encoding(req_accept_encoding.as_ref());
         encoding == Some(header::Encoding::Gzip)
     };
@@ -157,7 +156,7 @@ pub fn gzip(pool: &CpuPool, level: flate2::Compression, body: Body) -> Body {
 
     let (tx, body) = Body::pair();
 
-    pool.spawn(tx.send_all(stream.map(Ok).map_err(|_| unreachable!())))
+    pool.spawn(tx.send_all(stream.then(Ok)))
         .forget();
 
     body

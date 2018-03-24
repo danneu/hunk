@@ -4,10 +4,15 @@ use hyper::header;
 pub fn none_match(header_value: Option<&header::IfNoneMatch>, etag: &header::EntityTag) -> bool {
     match header_value {
         Some(&header::IfNoneMatch::Any) => false,
-        Some(&header::IfNoneMatch::Items(ref candidates)) => !(candidates as &[header::EntityTag])
-            .iter()
-            .any(|candidate| candidate.weak_eq(etag)),
-        _ => true,
+        Some(&header::IfNoneMatch::Items(ref candidates)) => {
+            for candidate in candidates {
+                if candidate.weak_eq(etag) {
+                    return false
+                }
+            }
+            true
+        }
+        None => true,
     }
 }
 
@@ -15,9 +20,14 @@ pub fn none_match(header_value: Option<&header::IfNoneMatch>, etag: &header::Ent
 pub fn any_match(header_value: Option<&header::IfMatch>, etag: &header::EntityTag) -> bool {
     match header_value {
         None | Some(&header::IfMatch::Any) => true,
-        Some(&header::IfMatch::Items(ref candidates)) => (candidates as &[header::EntityTag])
-            .iter()
-            .any(|candidate| candidate.strong_eq(etag)),
+        Some(&header::IfMatch::Items(ref candidates)) => {
+            for candidate in candidates {
+                if candidate.strong_eq(etag) {
+                    return true
+                }
+            }
+            false
+        }
     }
 }
 

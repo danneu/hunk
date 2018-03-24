@@ -51,6 +51,7 @@ impl Host {
 impl FromStr for Host {
     type Err = HostParseError;
 
+    // FIXME: Lazy impl
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match format!("http://{}", s)
             .parse::<Url>()
