@@ -1,6 +1,3 @@
-//#![allow(warnings)]
-#![allow(unused_variables)]
-#![allow(unused_imports)]
 #![allow(unused_macros)]
 #![feature(macro_at_most_once_rep)]
 #![feature(conservative_impl_trait)]

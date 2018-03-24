@@ -190,7 +190,7 @@ impl Service for Serve {
         let future = handle_request(self.pool, root.as_path(), req);
 
         Box::new(future.then(move |result| match result {
-            Err(e) => Box::new(ok(response::internal_server_error())),
+            Err(_) => Box::new(ok(response::internal_server_error())),
             Ok((_, Some(res))) => Box::new(ok(res)),
             Ok((req, None)) => next().call((site, req)),
         }))
