@@ -26,6 +26,7 @@ impl Service for Root {
     type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, req: Self::Request) -> Self::Future {
+        trace!("[root] request {:?} entered", req.path());
         // Client must send Host header.
         // https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-14#section-9.4
         if req.headers().get::<header::Host>().is_none() {
@@ -38,6 +39,12 @@ impl Service for Root {
             .get::<header::Host>()
             .map(|header| Host::from(header.clone()))
             .and_then(|host| self.sites.get(&host));
+
+        trace!(
+            "Host header is: {:?}. {}",
+            req.headers().get::<header::Host>(),
+            if site.is_some() { "MATCH" } else {"NO MATCH" }
+        );
 
         let site = match site {
             Some(x) => x,
