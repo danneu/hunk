@@ -16,7 +16,7 @@ A simple reverse proxy + asset server built with Rust.
 
 ## Install
 
-Download a binary: <https://github.com/danneu/prox/releases>.
+Download the latest executable: <https://github.com/danneu/prox/releases/latest>.
 
 Or compile it yourself with Rust.
 
