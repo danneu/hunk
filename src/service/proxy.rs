@@ -1,24 +1,25 @@
-use std::io;
-use std::sync::{Mutex, Arc};
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
-use std::net::{SocketAddr, IpAddr};
 use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
+use std::io;
+use std::net::{IpAddr, SocketAddr};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use futures_cpupool::CpuPool;
-use tokio_core::reactor::{Timeout, Core};
+use futures::{Future, future::ok};
 use futures::{Stream, future::Either};
-use futures::{future::ok, Future};
-use hyper::{self, Request, Response, server::{Http, Service}, header, Uri, Client, client::HttpConnector};
-use url::Url;
-use unicase::Ascii;
+use futures_cpupool::CpuPool;
+use hyper::{self, header, Client, Request, Response, Uri, client::HttpConnector,
+            server::{Http, Service}};
 use tokio_core::reactor::Handle;
+use tokio_core::reactor::{Core, Timeout};
+use unicase::Ascii;
+use url::Url;
 
 use config::{Config, Site};
-use response;
-use host::Host;
 use hop;
+use host::Host;
+use response;
 
 header! {
     (XForwardedFor, "X-Forwarded-For") => (IpAddr)+
@@ -33,7 +34,10 @@ pub struct Proxy {
 
 /// Return a new headers map with any hop-to-hop headers removed.
 fn without_hop_headers(headers: &header::Headers) -> header::Headers {
-    headers.iter().filter(|h| !hop::is_hop_header(h.name())).collect()
+    headers
+        .iter()
+        .filter(|h| !hop::is_hop_header(h.name()))
+        .collect()
 }
 
 fn make_proxy_request(mut req: Request, uri: Uri, remote_ip: IpAddr) -> Request {
@@ -43,10 +47,8 @@ fn make_proxy_request(mut req: Request, uri: Uri, remote_ip: IpAddr) -> Request 
 
     // Update forwarded-for header
     match req.headers_mut().get_mut::<XForwardedFor>() {
-        Some(ips) =>
-            ips.push(remote_ip),
-        None =>
-            req.headers_mut().set(XForwardedFor(vec![remote_ip])),
+        Some(ips) => ips.push(remote_ip),
+        None => req.headers_mut().set(XForwardedFor(vec![remote_ip])),
     }
 
     req
@@ -61,25 +63,23 @@ impl Service for Proxy {
     type Request = (&'static Site, Request);
     type Response = Response;
     type Error = hyper::Error;
-    type Future = Box<Future<Item=Self::Response, Error=Self::Error>>;
+    type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, (site, req): Self::Request) -> Self::Future {
         // Proxy only enabled if site.url is given.
         let dest_url = match site.url {
-            None =>
-                return Box::new(ok(response::not_found())),
-            Some(ref url) =>
-                url
+            None => return Box::new(ok(response::not_found())),
+            Some(ref url) => url,
         };
 
-        let uri = dest_url.join(req.path()).ok()
+        let uri = dest_url
+            .join(req.path())
+            .ok()
             .and_then(|url| url.to_string().parse::<Uri>().ok());
 
         let uri = match uri {
-            Some(x) =>
-                x,
-            None =>
-                return Box::new(ok(response::not_found())),
+            Some(x) => x,
+            None => return Box::new(ok(response::not_found())),
         };
 
         let proxy_req = make_proxy_request(req, uri, self.remote_ip);
@@ -95,26 +95,25 @@ impl Service for Proxy {
         };
 
         // The future of the origin's response
-        let res_future = self.client.request(proxy_req)
-            .then(|res| match res {
-                Ok(res) =>
-                    Ok(make_proxy_response(res)),
-                Err(_) =>
-                    Ok(response::internal_server_error()),
-            });
-
-        let future = res_future.select2(conn_timeout).then(|result| match result {
-            Ok(Either::A((res, _err))) => Ok(res),
-            Ok(Either::B((_timeout_error, _res))) => {
-                // TODO: Look into future lifecycle. Surely I don't need to drop(res_future) myself?
-                Err(hyper::Error::Io(io::Error::new(
-                    io::ErrorKind::TimedOut,
-                    "[timeout] client timed out during connect",
-                )))
-            },
-            Err(Either::A((res_error, _))) => Err(res_error),
-            Err(Either::B((timeout_error, _res))) => Err(From::from(timeout_error)),
+        let res_future = self.client.request(proxy_req).then(|res| match res {
+            Ok(res) => Ok(make_proxy_response(res)),
+            Err(_) => Ok(response::internal_server_error()),
         });
+
+        let future = res_future
+            .select2(conn_timeout)
+            .then(|result| match result {
+                Ok(Either::A((res, _err))) => Ok(res),
+                Ok(Either::B((_timeout_error, _res))) => {
+                    // TODO: Look into future lifecycle. Surely I don't need to drop(res_future) myself?
+                    Err(hyper::Error::Io(io::Error::new(
+                        io::ErrorKind::TimedOut,
+                        "[timeout] client timed out during connect",
+                    )))
+                }
+                Err(Either::A((res_error, _))) => Err(res_error),
+                Err(Either::B((timeout_error, _res))) => Err(From::from(timeout_error)),
+            });
 
         Box::new(future)
     }

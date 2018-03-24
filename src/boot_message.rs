@@ -1,15 +1,14 @@
-
 /// The boot message is the pretty heads-up that prints on server boot if stdout is tty.
-
 use colored::Colorize;
 
-use config::{self, Config, Site, CorsOrigin};
+use config::{self, Config, CorsOrigin, Site};
 use host::Host;
 
 fn pretty_site(site: &Site) {
     println!(
         "site: [{hosts}]",
-        hosts = site.host.iter()
+        hosts = site.host
+            .iter()
             .map(Host::to_string)
             .map(|s| s.bright_white().to_string())
             .collect::<Vec<_>>()
@@ -46,10 +45,13 @@ fn pretty_site(site: &Site) {
                 let mut s = format!("{}", "on".green().bold());
                 s.push(' ');
                 let origin = match opts.origin {
-                    CorsOrigin::Any =>
-                        "*".to_string(),
-                    CorsOrigin::Few(ref urls) =>
-                        format!("{:?}", urls.iter().map(|u| format!("{}", u)).collect::<Vec<String>>()),
+                    CorsOrigin::Any => "*".to_string(),
+                    CorsOrigin::Few(ref urls) => format!(
+                        "{:?}",
+                        urls.iter()
+                            .map(|u| format!("{}", u))
+                            .collect::<Vec<String>>()
+                    ),
                 };
                 s.push_str(format!("origin={}", origin.bold()).as_ref());
                 s
@@ -88,12 +90,11 @@ fn pretty_site(site: &Site) {
         "- root:   {}",
         match site.root {
             None => "off".to_string(),
-            Some(ref root) =>
-                format!(
-                    "{} {}",
-                    "on".green().bold(),
-                    root.to_str().unwrap_or("").to_string().bright_white()
-                )
+            Some(ref root) => format!(
+                "{} {}",
+                "on".green().bold(),
+                root.to_str().unwrap_or("").to_string().bright_white()
+            ),
         }
     );
 }
@@ -106,7 +107,13 @@ pub fn pretty(config: &Config) {
         "{} {} on {}",
         "[prox]".bright_white().bold(),
         "listening".bright_green().bold(),
-        config.server.bind.to_string().replace("127.0.0.1", "localhost").bright_white().bold()
+        config
+            .server
+            .bind
+            .to_string()
+            .replace("127.0.0.1", "localhost")
+            .bright_white()
+            .bold()
     );
 
     // SITES

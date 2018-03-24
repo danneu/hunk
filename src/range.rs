@@ -24,10 +24,8 @@ pub fn parse_range_header(
         Some(&header::Range::Bytes(ref byte_ranges)) => {
             // Get the first byte range or short-circuit if none given.
             let byte_range = match byte_ranges.first() {
-                Some(range) =>
-                    range,
-                None =>
-                    return RequestedRange::NotSatisfiable,
+                Some(range) => range,
+                None => return RequestedRange::NotSatisfiable,
             };
 
             // Avoid overflow on zero-length file by short-circuiting if client tries

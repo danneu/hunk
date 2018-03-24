@@ -1,5 +1,5 @@
-use std::path::Path;
 use hyper::mime::{self, Mime};
+use std::path::Path;
 use unicase::Ascii;
 
 #[macro_use]

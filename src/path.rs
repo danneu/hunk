@@ -4,7 +4,9 @@ use std::str::Utf8Error;
 use percent_encoding as pe;
 
 fn percent_decode_str(s: &str) -> Result<String, Utf8Error> {
-    pe::percent_decode(s.as_bytes()).decode_utf8().map(|x| x.to_string())
+    pe::percent_decode(s.as_bytes())
+        .decode_utf8()
+        .map(|x| x.to_string())
 }
 
 // A path is safe if it doesn't try to /./ or /../
@@ -49,10 +51,22 @@ pub fn get_entity_path(root: &Path, req_path: &str) -> Option<PathBuf> {
 
 #[test]
 fn test_get_entity_path() {
-    assert_eq!(get_entity_path(Path::new("foo"), "/"), Some(PathBuf::from("foo")));
-    assert_eq!(get_entity_path(Path::new("foo"), "/bar"), Some(PathBuf::from("foo/bar")));
+    assert_eq!(
+        get_entity_path(Path::new("foo"), "/"),
+        Some(PathBuf::from("foo"))
+    );
+    assert_eq!(
+        get_entity_path(Path::new("foo"), "/bar"),
+        Some(PathBuf::from("foo/bar"))
+    );
     assert_eq!(get_entity_path(Path::new("foo"), "/../bar"), None);
     assert_eq!(get_entity_path(Path::new("foo"), "bar"), None);
-    assert_eq!(get_entity_path(Path::new("foo"), "/folder/"), Some(PathBuf::from("foo/folder/")));
-    assert_eq!(get_entity_path(Path::new("."), "/%E4%B8%AD%E6%96%87.txt"), Some(PathBuf::from("./中文.txt")));
+    assert_eq!(
+        get_entity_path(Path::new("foo"), "/folder/"),
+        Some(PathBuf::from("foo/folder/"))
+    );
+    assert_eq!(
+        get_entity_path(Path::new("."), "/%E4%B8%AD%E6%96%87.txt"),
+        Some(PathBuf::from("./中文.txt"))
+    );
 }

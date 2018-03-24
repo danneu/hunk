@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 
-use futures_cpupool::CpuPool;
-use tokio_core::{reactor::Core, net::TcpListener};
-use hyper::{Client, Chunk, server::{Service, Http}};
 use atty;
-use leak::Leak;
 use env_logger;
-use futures::{Stream, Future};
+use futures::{Future, Stream};
+use futures_cpupool::CpuPool;
+use hyper::{Chunk, Client, server::{Http, Service}};
+use leak::Leak;
+use tokio_core::{net::TcpListener, reactor::Core};
 
+use boot_message;
 use config::Config;
 use service;
-use boot_message;
 
 /// Start server with given configuration.
 ///
@@ -39,15 +39,13 @@ pub fn serve(config: &Config) {
     http.sleep_on_errors(true);
 
     let listener = TcpListener::bind(&config.server.bind, handle).unwrap();
-    let factory = move |remote_ip| {
-        service::root::Root {
-            client,
-            config,
-            sites,
-            remote_ip,
-            pool,
-            handle,
-        }
+    let factory = move |remote_ip| service::root::Root {
+        client,
+        config,
+        sites,
+        remote_ip,
+        pool,
+        handle,
     };
 
     let future = listener.incoming().for_each(move |(socket, peer)| {
@@ -69,5 +67,4 @@ pub fn serve(config: &Config) {
     }
 
     core.run(future).unwrap()
-
 }

@@ -1,6 +1,6 @@
+use std::error::Error;
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::error::Error;
 use std::str::FromStr;
 
 use hyper::header;
@@ -19,7 +19,10 @@ pub struct Host {
 
 impl From<header::Host> for Host {
     fn from(header: header::Host) -> Self {
-        Host { hostname: header.hostname().to_string(), port: header.port() }
+        Host {
+            hostname: header.hostname().to_string(),
+            port: header.port(),
+        }
     }
 }
 
@@ -39,7 +42,7 @@ impl Host {
     pub fn to_string(&self) -> String {
         match self.port {
             None => self.hostname().to_string(),
-            Some(port) => format!("{}:{}", self.hostname(), port)
+            Some(port) => format!("{}:{}", self.hostname(), port),
         }
     }
 }
@@ -59,12 +62,10 @@ impl FromStr for Host {
         match format!("http://{}", s)
             .parse::<Url>()
             .map(|url| (url.host_str().map(|s| s.to_string()), url.port()))
-            {
-                Ok((Some(hostname), port)) =>
-                    Ok(Host::new(hostname, port)),
-                Ok((None, _)) | Err(_) =>
-                    Err(HostParseError(())),
-            }
+        {
+            | Ok((Some(hostname), port)) => Ok(Host::new(hostname, port)),
+            Ok((None, _)) | Err(_) => Err(HostParseError(())),
+        }
     }
 }
 

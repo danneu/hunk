@@ -10,7 +10,7 @@ pub fn is_hop_header(header: &str) -> bool {
 }
 
 lazy_static! {
-    static ref HOP_HEADERS: HashSet<Ascii<&'static str>> = hash_set! [
+    static ref HOP_HEADERS: HashSet<Ascii<&'static str>> = hash_set![
         Ascii::new("Connection"),
         Ascii::new("Keep-Alive"),
         Ascii::new("Proxy-Authenticate"),

@@ -1,13 +1,13 @@
-use std::net::SocketAddr;
-use std::error::Error;
-use std::path::PathBuf;
-use std::iter::FromIterator;
 use std::collections::HashSet;
+use std::error::Error;
+use std::iter::FromIterator;
+use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::time::Duration;
 
+use hyper::{header, Method};
 use serde;
 use unicase::Ascii;
-use hyper::{header, Method};
 use url::{self, Url};
 
 use host::Host;
@@ -23,7 +23,7 @@ pub struct Config {
 #[derive(Debug, Clone)]
 pub struct Server {
     pub bind: SocketAddr,
-    pub timeouts: Timeouts
+    pub timeouts: Timeouts,
 }
 
 #[derive(Debug, Clone)]
@@ -34,7 +34,7 @@ pub struct Timeouts {
 impl Default for Timeouts {
     fn default() -> Timeouts {
         Timeouts {
-            connect: Duration::from_secs(5)
+            connect: Duration::from_secs(5),
         }
     }
 }
@@ -55,7 +55,6 @@ fn default_bind() -> String {
 fn default_port() -> u32 {
     3000
 }
-
 
 #[derive(Debug, Clone)]
 pub struct Site {
@@ -87,7 +86,7 @@ pub struct Browse {}
 #[derive(Deserialize, Debug, Clone)]
 pub struct Log {
     #[serde(default = "default_log_format")]
-    pub format: String
+    pub format: String,
 }
 
 fn default_log_format() -> String {
@@ -96,11 +95,10 @@ fn default_log_format() -> String {
 
 impl<'de> serde::Deserialize<'de> for Site {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: serde::Deserializer<'de>,
+    where
+        D: serde::Deserializer<'de>,
     {
         use serde::de::Error;
-
 
         #[derive(Deserialize, Debug, Clone)]
         #[serde(untagged)]
@@ -124,24 +122,19 @@ impl<'de> serde::Deserialize<'de> for Site {
 
         // FIXME: This file is a mess.
         let url = match input.clone().url.map(|url| url.parse::<Url>()) {
-            None =>
-                None,
-            Some(Ok(ref x)) =>
-                Some(x.clone()),
-            Some(Err(e))  => {
+            None => None,
+            Some(Ok(ref x)) => Some(x.clone()),
+            Some(Err(e)) => {
                 return Err(D::Error::invalid_value(
                     serde::de::Unexpected::Str(&input.clone().url.unwrap()),
                     &e.description(),
                 ))
-            },
+            }
         };
 
         let host = match input.host {
-            Hosts_::Str(x) =>
-                vec![x],
-            Hosts_::Arr(xs) => {
-                xs
-            },
+            Hosts_::Str(x) => vec![x],
+            Hosts_::Arr(xs) => xs,
         };
 
         Ok(Site {
@@ -160,30 +153,27 @@ impl<'de> serde::Deserialize<'de> for Site {
 
 impl<'de> serde::Deserialize<'de> for Host {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: serde::Deserializer<'de>,
+    where
+        D: serde::Deserializer<'de>,
     {
         use serde::de::Error;
 
         let input: String = String::deserialize(deserializer)?;
 
         match input.parse::<Host>() {
-           Err(e) =>
-               Err(D::Error::invalid_value(
-                   serde::de::Unexpected::Str(&input),
-                   &e.description(),
-               )),
-            Ok(host) =>
-                Ok(host),
+            Err(e) => Err(D::Error::invalid_value(
+                serde::de::Unexpected::Str(&input),
+                &e.description(),
+            )),
+            Ok(host) => Ok(host),
         }
     }
 }
 
-
 impl<'de> serde::Deserialize<'de> for Server {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: serde::Deserializer<'de>,
+    where
+        D: serde::Deserializer<'de>,
     {
         use serde::de::Error;
 
@@ -211,11 +201,10 @@ impl<'de> serde::Deserialize<'de> for Server {
 
         Ok(Server {
             bind,
-            timeouts: input.timeouts.unwrap_or_else(Timeouts::default)
+            timeouts: input.timeouts.unwrap_or_else(Timeouts::default),
         })
     }
 }
-
 
 // CORS
 
@@ -244,8 +233,8 @@ pub struct Cors {
 
 impl<'de> serde::Deserialize<'de> for CorsOrigin {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: serde::Deserializer<'de>,
+    where
+        D: serde::Deserializer<'de>,
     {
         use serde::de::Error;
 
@@ -261,33 +250,31 @@ impl<'de> serde::Deserialize<'de> for CorsOrigin {
             Ok(header::Origin::new(
                 url.scheme().to_string(),
                 url.host_str().unwrap().to_string(),
-                url.port())
-            )
+                url.port(),
+            ))
         }
 
         match CorsOrigin_::deserialize(deserializer) {
-            Ok(CorsOrigin_::Str(ref x)) if x == "*" =>
-                Ok(CorsOrigin::Any),
-            Ok(CorsOrigin_::Str(x)) =>
-                Err(D::Error::invalid_value(
-                    serde::de::Unexpected::Str(&x),
-                    &"\"*\" or an array of strings",
-                )),
+            Ok(CorsOrigin_::Str(ref x)) if x == "*" => Ok(CorsOrigin::Any),
+            Ok(CorsOrigin_::Str(x)) => Err(D::Error::invalid_value(
+                serde::de::Unexpected::Str(&x),
+                &"\"*\" or an array of strings",
+            )),
             Ok(CorsOrigin_::Arr(xs)) => {
                 let origins = xs.into_iter()
                     .map(|x| url_to_origin(&x).map_err(|e| D::Error::custom(e.description())))
                     .collect::<Result<Vec<header::Origin>, _>>()?;
                 Ok(CorsOrigin::Few(origins))
-            },
-            Err(e) =>
-                Err(e)
+            }
+            Err(e) => Err(e),
         }
     }
 }
 
 impl<'de> serde::Deserialize<'de> for Cors {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: serde::Deserializer<'de>,
+    where
+        D: serde::Deserializer<'de>,
     {
         use serde::de::Error;
 
@@ -315,9 +302,14 @@ impl<'de> serde::Deserialize<'de> for Cors {
 
         let input = Cors_::deserialize(deserializer)?;
 
-        let methods = input.methods.into_iter().map(|s| {
-            s.parse::<Method>().map_err(|e| D::Error::custom(e.description()))
-        }).collect::<Result<Vec<Method>, _>>()?;
+        let methods = input
+            .methods
+            .into_iter()
+            .map(|s| {
+                s.parse::<Method>()
+                    .map_err(|e| D::Error::custom(e.description()))
+            })
+            .collect::<Result<Vec<Method>, _>>()?;
 
         let allowed_headers = HashSet::from_iter(input.allowed_headers.into_iter().map(Ascii::new));
         let exposed_headers = input.exposed_headers.into_iter().map(Ascii::new).collect();
@@ -335,8 +327,8 @@ impl<'de> serde::Deserialize<'de> for Cors {
 
 impl<'de> serde::Deserialize<'de> for Timeouts {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: serde::Deserializer<'de>,
+    where
+        D: serde::Deserializer<'de>,
     {
         use serde::de::Error;
 
@@ -349,8 +341,6 @@ impl<'de> serde::Deserialize<'de> for Timeouts {
 
         let connect = Duration::from_millis(input.connect);
 
-        Ok(Timeouts {
-            connect
-        })
+        Ok(Timeouts { connect })
     }
 }

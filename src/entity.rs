@@ -1,18 +1,18 @@
-use std::ops::Range;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use std::io;
-use std::os::unix::fs::{FileExt, MetadataExt};
-use std::fs::File;
-use std::sync::Arc;
 use std::cmp;
+use std::fs::File;
+use std::io;
+use std::ops::Range;
+use std::os::unix::fs::{FileExt, MetadataExt};
+use std::sync::Arc;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use futures::{stream, Sink, Stream, future::{err, ok}};
 use futures_cpupool::CpuPool;
-use futures::{stream, Sink, Stream, future::{ok,err}};
 use hyper::{self, header, Body, Chunk};
 
+use etag;
 use mime;
 use util;
-use etag;
 
 struct Inner {
     inode: u64,

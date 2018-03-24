@@ -1,6 +1,6 @@
-use unicase::Ascii;
-use std::collections::{HashSet, HashMap};
 use hyper::mime::Mime;
+use std::collections::{HashMap, HashSet};
+use unicase::Ascii;
 
 use mime::MimeRecord;
 

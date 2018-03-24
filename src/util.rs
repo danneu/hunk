@@ -1,5 +1,5 @@
-use std::u64;
 use std::time::Duration;
+use std::u64;
 
 use unicase::Ascii;
 
@@ -14,12 +14,9 @@ pub fn append_header_vary(headers: &mut ::hyper::Headers, item: Ascii<String>) {
     use hyper::header::Vary;
 
     match headers.get_mut::<Vary>() {
-        Some(&mut Vary::Any) =>
-            {},
-        Some(&mut Vary::Items(ref mut xs)) =>
-            xs.push(item),
-        None =>
-            headers.set(Vary::Items(vec![item]))
+        Some(&mut Vary::Any) => {}
+        Some(&mut Vary::Items(ref mut xs)) => xs.push(item),
+        None => headers.set(Vary::Items(vec![item])),
     }
 }
 

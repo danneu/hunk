@@ -1,30 +1,31 @@
-use std::sync::{Mutex, Arc};
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
-use std::net::{SocketAddr, IpAddr};
-use std::path::Path;
-use std::io;
 use std::fs;
+use std::hash::{Hash, Hasher};
+use std::io;
+use std::net::{IpAddr, SocketAddr};
+use std::path::Path;
+use std::sync::{Arc, Mutex};
 
-use futures_cpupool::CpuPool;
-use tokio_core::reactor::Core;
-use futures::{Sink, Stream, stream};
-use futures::{future::ok, Future};
-use hyper::{self, Request, Response, server::{Http, Service}, header, Uri, Client, client::HttpConnector, Method, Body, Chunk};
-use url::Url;
-use unicase::Ascii;
-use std::collections::HashSet;
 use flate2;
+use futures::{Future, future::ok};
+use futures::{stream, Sink, Stream};
+use futures_cpupool::CpuPool;
+use hyper::{self, header, Body, Chunk, Client, Method, Request, Response, Uri,
+            client::HttpConnector, server::{Http, Service}};
+use std::collections::HashSet;
+use tokio_core::reactor::Core;
+use unicase::Ascii;
+use url::Url;
 
 use config::{self, Config, Site};
-use response;
-use host::Host;
 use hop;
-use service;
+use host::Host;
 use mime;
 use negotiation;
-use util;
 use path;
+use response;
+use service;
+use util;
 
 pub struct Browse {
     pub config: &'static Config,
@@ -39,7 +40,7 @@ impl Service for Browse {
     type Request = (&'static Site, Request);
     type Response = Response;
     type Error = hyper::Error;
-    type Future = Box<Future<Item=Self::Response, Error=Self::Error>>;
+    type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, (site, req): Self::Request) -> Self::Future {
         let config = self.config;
@@ -48,27 +49,25 @@ impl Service for Browse {
         let remote_ip = self.remote_ip;
         let handle = self.handle;
 
-        let next = move || {
-            service::serve::Serve {
-                config,
-                pool,
-                client,
-                remote_ip,
-                handle,
-            }
+        let next = move || service::serve::Serve {
+            config,
+            pool,
+            client,
+            remote_ip,
+            handle,
         };
 
         // Short-circuit if root or browse opts are not set
         let root = match (&site.root, &site.browse) {
-            (&Some(ref x), &Some(_)) =>
-                x,
-            _ =>
-                return next().call((site, req)),
+            (&Some(ref x), &Some(_)) => x,
+            _ => return next().call((site, req)),
         };
 
         // Only handle GET, OPTIONS, HEAD
-        if *req.method() != Method::Get && *req.method() != Method::Head && *req.method() != Method::Options {
-            return Box::new(next().call((site, req)))
+        if *req.method() != Method::Get && *req.method() != Method::Head
+            && *req.method() != Method::Options
+        {
+            return Box::new(next().call((site, req)));
         }
 
         let entity_path = match path::get_entity_path(root, req.path()) {
@@ -76,20 +75,16 @@ impl Service for Browse {
             Some(path) => path,
         };
 
-        let future = Box::new(pool.spawn_fn(move || {
-            handle_folder(pool, root, entity_path.as_path())
-        }));
+        let future =
+            Box::new(pool.spawn_fn(move || handle_folder(pool, root, entity_path.as_path())));
 
         Box::new(future.then(move |res| {
             match res {
                 // Our handler succeeded, so return its response
-                Ok(res) =>
-                    Box::new(ok(res)),
+                Ok(res) => Box::new(ok(res)),
                 // If not a directory or file not found, then continue to next handler
-                Err(ref e) if e.raw_os_error() == Some(20) =>
-                    next().call((site, req)),
-                Err(ref e) if e.kind() == io::ErrorKind::NotFound =>
-                    next().call((site, req)),
+                Err(ref e) if e.raw_os_error() == Some(20) => next().call((site, req)),
+                Err(ref e) if e.kind() == io::ErrorKind::NotFound => next().call((site, req)),
                 Err(e) => {
                     error!("error in handle_folder: {}", e);
                     Box::new(ok(response::internal_server_error()))
@@ -119,9 +114,16 @@ fn handle_folder(pool: &CpuPool, root: &Path, path: &Path) -> io::Result<Respons
                     Some(filename) => filename.to_string_lossy().to_string(),
                 };
 
-                let href = format!("/{}", entry.path().strip_prefix(&root).unwrap().to_string_lossy());
+                let href = format!(
+                    "/{}",
+                    entry.path().strip_prefix(&root).unwrap().to_string_lossy()
+                );
 
-                Some(FolderItem { filename, href, metadata })
+                Some(FolderItem {
+                    filename,
+                    href,
+                    metadata,
+                })
             })
         })
         .filter_map(Result::ok)
@@ -137,23 +139,33 @@ fn handle_folder(pool: &CpuPool, root: &Path, path: &Path) -> io::Result<Respons
         .and_then(|path| path.to_str())
         .map(|path| format!("/{}", path));
 
-
     let stream = stream::iter_ok(vec![
-        Ok(Chunk::from(format!(r#"<!doctype html>
+        Ok(Chunk::from(format!(
+            r#"<!doctype html>
 <html lang="en">
 <meta charset="utf-8">
 <style>{}</style>
-<ul>"#, CSS))),
+<ul>"#,
+            CSS
+        ))),
         if let Some(parent_href) = parent_href {
-            Ok(Chunk::from(format!("<li><a class=\"fo\" href=\"{}\">..", parent_href)))
+            Ok(Chunk::from(format!(
+                "<li><a class=\"fo\" href=\"{}\">..",
+                parent_href
+            )))
         } else {
             Ok(Chunk::from(""))
-        }
+        },
     ]);
 
     let stream = stream.chain(stream::iter_ok(entries.into_iter().map(|item| {
         let class = if item.metadata.is_dir() { "fo" } else { "fi" };
-        let html = format!("\n<li><a href=\"{href}\" class=\"{class}\">{filename}", href = item.href, filename = item.filename, class = class);
+        let html = format!(
+            "\n<li><a href=\"{href}\" class=\"{class}\">{filename}",
+            href = item.href,
+            filename = item.filename,
+            class = class
+        );
         Ok(Chunk::from(html))
     })));
 

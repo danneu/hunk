@@ -1,26 +1,27 @@
-use std::sync::{Mutex, Arc};
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use std::net::{SocketAddr, IpAddr};
+use std::net::{IpAddr, SocketAddr};
+use std::sync::{Arc, Mutex};
 
-use futures_cpupool::CpuPool;
 use chrono::prelude::Utc;
-use tokio_core::reactor::Core;
-use futures::{Sink};
-use futures::{future::ok, Future};
-use hyper::{self, Request, Response, server::{Http, Service}, header, Uri, Client, client::HttpConnector, Method, Body};
-use url::Url;
-use unicase::Ascii;
-use std::collections::HashSet;
 use flate2;
+use futures::Sink;
+use futures::{Future, future::ok};
+use futures_cpupool::CpuPool;
+use hyper::{self, header, Body, Client, Method, Request, Response, Uri, client::HttpConnector,
+            server::{Http, Service}};
+use std::collections::HashSet;
+use tokio_core::reactor::Core;
+use unicase::Ascii;
+use url::Url;
 
-use config::{self, Config, Site, CorsOrigin};
-use response;
-use host::Host;
+use config::{self, Config, CorsOrigin, Site};
 use hop;
-use service;
+use host::Host;
 use mime;
 use negotiation;
+use response;
+use service;
 use util;
 
 pub struct Cors {
@@ -36,7 +37,7 @@ impl Service for Cors {
     type Request = (&'static Site, Request);
     type Response = Response;
     type Error = hyper::Error;
-    type Future = Box<Future<Item=Self::Response, Error=Self::Error>>;
+    type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, (site, req): Self::Request) -> Self::Future {
         let config = self.config;
@@ -45,54 +46,47 @@ impl Service for Cors {
         let remote_ip = self.remote_ip;
         let handle = self.handle;
 
-        let next = move || {
-            service::browse::Browse {
-                config,
-                pool,
-                client,
-                remote_ip,
-                handle,
-            }
+        let next = move || service::browse::Browse {
+            config,
+            pool,
+            client,
+            remote_ip,
+            handle,
         };
 
         // Short-circuit if logging is disabled
         let config: &config::Cors = match site.cors {
-            None =>
-                return Box::new(next().call((site, req))),
-            Some(ref opts) =>
-                opts,
+            None => return Box::new(next().call((site, req))),
+            Some(ref opts) => opts,
         };
 
         // Bail if request has no Origin header
         let req_origin: header::Origin = match req.headers().get::<header::Origin>() {
-            None =>
-                return Box::new(next().call((site, req))),
-            Some(site) =>
-                site.clone(),
+            None => return Box::new(next().call((site, req))),
+            Some(site) => site.clone(),
         };
 
         let allow_origin = match config.origin {
-            CorsOrigin::Any =>
-                true,
-            CorsOrigin::Few(ref alloweds) =>
-                alloweds.contains(&req_origin),
+            CorsOrigin::Any => true,
+            CorsOrigin::Few(ref alloweds) => alloweds.contains(&req_origin),
         };
 
         if *req.method() == Method::Options {
             let mut res = Response::new();
             util::append_header_vary(&mut res.headers_mut(), Ascii::new("Origin".to_string()));
             res.headers_mut().set(header::ContentLength(0));
-            res.headers_mut().set(header::ContentType(hyper::mime::TEXT_PLAIN_UTF_8));
+            res.headers_mut()
+                .set(header::ContentType(hyper::mime::TEXT_PLAIN_UTF_8));
 
             // Bail if Origin does not match our allowed set
             // Notice that preflight branch bails with its new response.
             // Non-preflight branch bails with the downstream response.
             if !allow_origin {
-                return Box::new(ok(res))
+                return Box::new(ok(res));
             }
 
             res.headers_mut().set(header::AccessControlAllowMethods(
-                config.methods.iter().cloned().collect()
+                config.methods.iter().cloned().collect(),
             ));
 
             let actual_method = match req.headers().get::<header::AccessControlRequestMethod>() {
@@ -103,12 +97,11 @@ impl Service for Cors {
 
             // Bail if unapproved method
             if !config.methods.contains(actual_method) {
-                return Box::new(ok(res))
+                return Box::new(ok(res));
             }
 
-            let actual_header_keys: Vec<Ascii<String>> = match req.headers()
-                .get::<header::AccessControlRequestHeaders>()
-                {
+            let actual_header_keys: Vec<Ascii<String>> =
+                match req.headers().get::<header::AccessControlRequestHeaders>() {
                     None => Vec::new(),
                     Some(&header::AccessControlRequestHeaders(ref keys)) => keys.to_vec(),
                 };
@@ -117,12 +110,16 @@ impl Service for Cors {
             if actual_header_keys
                 .iter()
                 .any(|k| !config.allowed_headers.contains(k))
-                {
-                    return Box::new(ok(res))
-                }
+            {
+                return Box::new(ok(res));
+            }
 
             // Success, so set the allow origin header.
-            res.headers_mut().set(header::AccessControlAllowOrigin::Value(format!("{}", req_origin)));
+            res.headers_mut()
+                .set(header::AccessControlAllowOrigin::Value(format!(
+                    "{}",
+                    req_origin
+                )));
 
             if config.allow_credentials {
                 res.headers_mut().set(header::AccessControlAllowCredentials);
@@ -137,13 +134,17 @@ impl Service for Cors {
             Box::new(next().call((site, req)).map(move |mut res: Response| {
                 // Bail if Origin does not match our allowed set
                 if !allow_origin {
-                    return res
+                    return res;
                 }
 
                 // Always set Vary header if CORS is enabled.
                 util::append_header_vary(&mut res.headers_mut(), Ascii::new("Origin".to_string()));
 
-                res.headers_mut().set(header::AccessControlAllowOrigin::Value(format!("{}", req_origin)));
+                res.headers_mut()
+                    .set(header::AccessControlAllowOrigin::Value(format!(
+                        "{}",
+                        req_origin
+                    )));
 
                 if config.allow_credentials {
                     res.headers_mut().set(header::AccessControlAllowCredentials);
@@ -151,7 +152,7 @@ impl Service for Cors {
 
                 if !config.exposed_headers.is_empty() {
                     res.headers_mut().set(header::AccessControlExposeHeaders(
-                        config.exposed_headers.clone()
+                        config.exposed_headers.clone(),
                     ))
                 }
 
@@ -160,4 +161,3 @@ impl Service for Cors {
         }
     }
 }
-
