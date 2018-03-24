@@ -1,6 +1,6 @@
 [package]
 name = "hunk"
-version = "0.0.0"
+version = "0.0.1"
 authors = ["Dan Neumann <danrodneu@gmail.com>"]
 publish = false
 
