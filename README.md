@@ -190,3 +190,7 @@ Optional:
     cd prox
     cargo install cargo-watch
     CARGO_INCREMENTAL=1 RUST_LOG="prox" cargo watch -x 'run --bin prox'
+    
+Crafting requests:
+
+    echo -ne 'GET http://localhost:3000/a HTTP/1.1\r\nHost: example.com\r\nContent-Length: 5\r\n\r\nHello' | nc localhost 3000

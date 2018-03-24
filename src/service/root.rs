@@ -70,8 +70,6 @@ impl Service for Root {
 /// If the request path is absolute, then the Host header is replaced with it.
 ///
 /// <https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-14#section-9.4>
-///
-///     echo -ne 'GET http://localhost:3000/a HTTP/1.1\r\nHost: example.com\r\nContent-Length: 5\r\n\r\nHello' | nc localhost 3000
 fn fix_host_header(mut req: Request) -> Request {
     if !req.uri().is_absolute() {
         return req;
