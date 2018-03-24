@@ -2,8 +2,7 @@ use std::error::Error;
 use std::fmt;
 use std::str::FromStr;
 
-use hyper::header;
-use url::Url;
+use hyper::{Uri, header};
 
 // Note: Case-insensitive
 // https://tools.ietf.org/html/rfc3986#section-3.2.2
@@ -13,36 +12,34 @@ use url::Url;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Host {
     hostname: String,
-    port: Option<u16>,
+    /// Port defaults to 80
+    port: u16,
 }
 
 impl From<header::Host> for Host {
     fn from(header: header::Host) -> Self {
         Host {
             hostname: header.hostname().to_string(),
-            port: header.port(),
+            port: header.port().unwrap_or(80),
         }
     }
 }
 
 impl Host {
     pub fn new(hostname: String, port: Option<u16>) -> Self {
-        Host { hostname, port }
+        Host { hostname, port: port.unwrap_or(80) }
     }
 
     pub fn hostname(&self) -> &str {
         &self.hostname
     }
 
-    pub fn port(&self) -> Option<&u16> {
-        self.port.as_ref()
+    pub fn port(&self) -> u16 {
+        self.port
     }
 
     pub fn to_string(&self) -> String {
-        match self.port {
-            None => self.hostname().to_string(),
-            Some(port) => format!("{}:{}", self.hostname(), port),
-        }
+        format!("{}:{}", self.hostname(), self.port())
     }
 }
 
@@ -52,12 +49,14 @@ impl FromStr for Host {
 
     // FIXME: Lazy impl
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match format!("http://{}", s)
-            .parse::<Url>()
-            .map(|url| (url.host_str().map(|s| s.to_string()), url.port()))
-        {
-            | Ok((Some(hostname), port)) => Ok(Host::new(hostname, port)),
-            Ok((None, _)) | Err(_) => Err(HostParseError(())),
+        let uri = match format!("{}", s).parse::<Uri>() {
+            Ok(uri) => uri,
+            Err(_) => return Err(HostParseError(())),
+        };
+
+        match uri.host() {
+            Some(hostname) => Ok(Host::new(hostname.to_string(), uri.port())),
+            None =>  Err(HostParseError(())),
         }
     }
 }

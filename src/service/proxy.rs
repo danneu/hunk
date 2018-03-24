@@ -83,13 +83,27 @@ impl Service for Proxy {
 
         let conn_timeout = match Timeout::new(conn_duration, self.handle) {
             Ok(x) => x,
-            Err(_) => return Box::new(ok(response::internal_server_error())),
+            Err(e) => {
+                error!("error creating timeout: {}", e);
+                return Box::new(ok(response::internal_server_error()))
+            },
         };
 
         // The future of the origin's response
         let res_future = self.client.request(proxy_req).then(|res| match res {
             Ok(res) => Ok(make_proxy_response(res)),
-            Err(_) => Ok(response::internal_server_error()),
+            Err(e) => {
+                error!("error making client request: {:?}", e);
+                match e {
+                    // TODO: How should other errors be handled?
+                    hyper::Error::Io(ref e) if e.kind() == io::ErrorKind::ConnectionRefused
+                        || e.kind() == io::ErrorKind::ConnectionAborted
+                        || e.kind() == io::ErrorKind::ConnectionReset =>
+                        Ok(response::bad_gateway()),
+                    _ =>
+                        Ok(response::internal_server_error()),
+                }
+            },
         });
 
         let future = res_future

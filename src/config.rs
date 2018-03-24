@@ -143,9 +143,7 @@ impl<'de> serde::Deserialize<'de> for Site {
         Ok(Site {
             host,
             url,
-            // It's okay if canonicalize fails. It's just to improve the boot message.
-            // The directory doesn't have to exist. It can at some future point in time.
-            root: input.root.and_then(|p| p.canonicalize().ok()),
+            root: input.root,
             gzip: input.gzip,
             browse: input.browse,
             log: input.log,

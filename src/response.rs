@@ -20,6 +20,15 @@ pub fn method_not_allowed() -> Response {
         .with_body(TEXT)
 }
 
+pub fn bad_gateway() -> Response {
+    const TEXT: &str = "Bad gateway";
+    Response::new()
+        .with_status(StatusCode::BadGateway)
+        .with_header(header::ContentLength(TEXT.len() as u64))
+        .with_header(header::ContentType::plaintext())
+        .with_body(TEXT)
+}
+
 pub fn not_found() -> Response {
     const TEXT: &str = "Not found";
     Response::new()

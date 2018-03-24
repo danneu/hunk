@@ -30,6 +30,7 @@ impl Service for Browse {
     type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, (site, req): Self::Request) -> Self::Future {
+        trace!("[browse] request {} entered", req.uri());
         let config = self.config;
         let pool = self.pool;
         let client = self.client;

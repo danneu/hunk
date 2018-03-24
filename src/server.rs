@@ -51,9 +51,9 @@ pub fn serve(config: &Config) {
     let future = listener.incoming().for_each(move |(socket, peer)| {
         let conn = http.serve_connection(socket, factory(peer.ip()))
             .map(|_| ())
-            .map_err(|_| {
+            .map_err(|e| {
                 // Note: Very noisy (epipe)
-                // error!("server connection error: {}", e)
+                 error!("server connection error: {}", e)
             });
 
         handle.spawn(conn);
