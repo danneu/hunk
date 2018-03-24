@@ -3,31 +3,28 @@
 
 use colored::Colorize;
 
-use config::{self, Config, Origin};
+use config::{self, Config, Origin, CorsOrigin};
 use host::Host;
 
 fn pretty_origin(origin: &Origin) {
-    match origin.url {
-        None => {
-            println!(
-                "vhost: {hosts}",
-                hosts = origin.host.iter()
-                    .map(Host::to_string)
-                    .collect::<Vec<_>>()
-                    .join(", "),
-            );
-        },
-        Some(ref url) => {
-            println!(
-                "vhost: {hosts} -> {dest}",
-                hosts = origin.host.iter()
-                    .map(Host::to_string)
-                    .collect::<Vec<_>>()
-                    .join(", "),
-                dest = url
-            );
-        },
-    };
+    println!(
+        "vhost: [{hosts}]",
+        hosts = origin.host.iter()
+            .map(Host::to_string)
+            .map(|s| s.bright_white().to_string())
+            .collect::<Vec<_>>()
+            .join(", "),
+    );
+
+    // PROXY
+
+    println!(
+        "- proxy:  {}",
+        match origin.url {
+            None => "off".to_string(),
+            Some(ref url) => format!("{}   -> {}", "on".green().bold(), url),
+        }
+    );
 
     // GZIP
 
@@ -41,24 +38,24 @@ fn pretty_origin(origin: &Origin) {
 
     // CORS
 
-//    println!(
-//        "- cors: {}",
-//        match origin.cors.as_ref() {
-//            None => "off".red().bold().to_string(),
-//            Some(opts) => {
-//                let mut s = format!("{}", "on".green().bold());
-//                s.push(' ');
-//                let origin = match opts.origin {
-//                    origin::Origin::Any =>
-//                        "*".to_string(),
-//                    origin::Origin::Few(ref urls) =>
-//                        format!("{:?}", urls.iter().map(|u| format!("{}", u)).collect::<Vec<String>>()),
-//                };
-//                s.push_str(format!("origin={}", origin.bold()).as_ref());
-//                s
-//            }
-//        }
-//    );
+    println!(
+        "- cors:   {}",
+        match origin.cors.as_ref() {
+            None => "off".to_string(),
+            Some(opts) => {
+                let mut s = format!("{}", "on".green().bold());
+                s.push(' ');
+                let origin = match opts.origin {
+                    CorsOrigin::Any =>
+                        "*".to_string(),
+                    CorsOrigin::Few(ref urls) =>
+                        format!("{:?}", urls.iter().map(|u| format!("{}", u)).collect::<Vec<String>>()),
+                };
+                s.push_str(format!("origin={}", origin.bold()).as_ref());
+                s
+            }
+        }
+    );
 
     //  LOG
 
