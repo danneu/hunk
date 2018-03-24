@@ -13,8 +13,8 @@ use url::Url;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Host {
-    pub hostname: String,
-    pub port: Option<u16>,
+    hostname: String,
+    port: Option<u16>,
 }
 
 impl From<header::Host> for Host {
@@ -46,13 +46,6 @@ impl Host {
         }
     }
 }
-
-//impl Hash for Host {
-//    fn hash<H: Hasher>(&self, state: &mut H) {
-//        self.hostname.hash(state);
-//        self.port.hash(state);
-//    }
-//}
 
 // e.g. localhost:3000 or localhost
 impl FromStr for Host {

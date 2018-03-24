@@ -67,16 +67,18 @@ impl Service for Proxy {
 
     fn call(&self, (site, req): Self::Request) -> Self::Future {
         // Proxy only enabled if site.url is given.
-        let dest_url = match site.url {
+        let site_url = match site.url {
             None => return Box::new(ok(response::not_found())),
             Some(ref url) => url,
         };
 
-        let uri = dest_url
+        // Concatenate site url and request path into target uri
+        let uri = site_url
             .join(req.path())
             .ok()
             .and_then(|url| url.to_string().parse::<Uri>().ok());
 
+        // Bail if it doesn't parse into a uri
         let uri = match uri {
             Some(x) => x,
             None => return Box::new(ok(response::not_found())),

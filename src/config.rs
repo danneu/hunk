@@ -12,6 +12,7 @@ use url::{self, Url};
 
 use host::Host;
 
+/// Configures the proxy server.
 #[derive(Deserialize, Debug, Clone, Default)]
 pub struct Config {
     pub server: Server,
@@ -20,6 +21,7 @@ pub struct Config {
     pub sites: Vec<Site>,
 }
 
+/// Configures top-level concerns like which port to bind to.
 #[derive(Debug, Clone)]
 pub struct Server {
     pub bind: SocketAddr,
@@ -56,6 +58,7 @@ fn default_port() -> u32 {
     3000
 }
 
+/// A Site tells prox how to handle requests that match the host.
 #[derive(Debug, Clone)]
 pub struct Site {
     pub host: Vec<Host>,

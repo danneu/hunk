@@ -1,10 +1,13 @@
 //#![allow(warnings)]
 #![allow(unused_variables)]
 #![allow(unused_imports)]
+#![allow(unused_macros)]
 #![feature(macro_at_most_once_rep)]
 #![feature(conservative_impl_trait)]
 #![feature(option_filter)]
 #![feature(nll)]
+
+//! Prox is a lightweight reverse proxy and asset server.
 
 extern crate tokio;
 #[macro_use]
@@ -30,25 +33,6 @@ extern crate unicase;
 extern crate serde_derive;
 extern crate toml;
 
-use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
-use std::net::{IpAddr, SocketAddr};
-use std::sync::{Arc, Mutex};
-
-use futures::Stream;
-use futures::{future, Future};
-use futures_cpupool::CpuPool;
-use hyper::client::FutureResponse;
-use hyper::header;
-use hyper::header::ContentLength;
-use hyper::server::{Http, Request, Response, Service};
-use hyper::{Client, Uri, client::HttpConnector};
-use leak::Leak;
-use std::collections::HashSet;
-use tokio_core::reactor::Core;
-use unicase::Ascii;
-use url::Url;
-
 #[macro_use]
 mod util;
 mod boot_message;
@@ -65,5 +49,6 @@ mod response;
 mod server;
 mod service;
 
-pub use config::Config;
+pub use config::{Browse, Config, Gzip, Log, Server, Site, Timeouts};
+
 pub use server::serve;

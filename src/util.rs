@@ -20,7 +20,6 @@ pub fn append_header_vary(headers: &mut ::hyper::Headers, item: Ascii<String>) {
     }
 }
 
-#[macro_export]
 macro_rules! hash_set {
     ( $( $k:expr ),* $(,)? ) => {
         {
@@ -31,7 +30,6 @@ macro_rules! hash_set {
     };
 }
 
-#[macro_export]
 macro_rules! hash_map {
     ( $( ($k:expr, $v:expr) ),* $(,)? ) => {
         {
