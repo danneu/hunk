@@ -75,15 +75,11 @@ have CORS enabled but have whitelisted all origins.
 
 ```toml
 [server]
-# (Required) The address prox will listen on
 bind = "localhost:3000"
 
 [[site]]
-# (Required) Can provide one or an array of hosts
 host = ["foo.com", "localhost:4001"]
-# (Optional) Provide a url if you want to to proxy requests from host -> url
 url = "http://localhost:4001"
-# (Optional) Static assets directory
 root = "foo/public"
 [site.cors]
 origin = ["http://catdog.com"]
@@ -109,10 +105,8 @@ bind = "localhost:3000"
     
         ```toml
         [server]
-        timeouts = {
-            # Wait up to 5 seconds for 3rd party to start responding to our request.
-            connect = 5000
-        }
+        # Wait up to 5 seconds for 3rd party to start responding to our request.
+        timeouts = { connect = 5000 }
         ```
 
 ### `site` blocks
