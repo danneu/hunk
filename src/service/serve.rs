@@ -46,8 +46,6 @@ fn handle_request_sync(pool: CpuPool, root: &'static Path, req: Request) -> (Req
         Some(path) => path,
     };
 
-    trace!("[serve #handle_request] entity_path: ${:?}", entity_path);
-
     let file = match File::open(&entity_path) {
         Err(_) =>// return Box::new(ok(response::not_found())),
             return (req, None),
@@ -165,10 +163,12 @@ impl Service for Serve {
     fn call(&self, (origin, req): Self::Request) -> Self::Future {
         let client = self.client;
         let remote_ip = self.remote_ip;
+        let config = self.config;
 
         let next = move || service::proxy::Proxy {
             client,
             remote_ip,
+            config,
         };
 
         // Short-circuit if root is not set.

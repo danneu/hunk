@@ -2,6 +2,10 @@
 name = "hunk"
 version = "0.0.0"
 authors = ["Dan Neumann <danrodneu@gmail.com>"]
+publish = false
+
+[package.metadata.release]
+no-dev-version = true
 
 [dependencies]
 url = "*"

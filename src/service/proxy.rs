@@ -1,18 +1,20 @@
+use std::io;
 use std::sync::{Mutex, Arc};
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::net::{SocketAddr, IpAddr};
+use std::collections::HashSet;
+use std::time::Duration;
 
 use futures_cpupool::CpuPool;
-use tokio_core::reactor::Core;
-use futures::{Stream};
+use tokio_core::reactor::{Timeout, Core};
+use futures::{Stream, future::Either};
 use futures::{future::ok, Future};
 use hyper::{self, Request, Response, server::{Http, Service}, header, Uri, Client, client::HttpConnector};
 use url::Url;
 use unicase::Ascii;
-use std::collections::HashSet;
 
-use config::Origin;
+use config::{Config, Origin};
 use response;
 use host::Host;
 use hop;
@@ -24,8 +26,10 @@ header! {
 pub struct Proxy {
     pub client: &'static Client<HttpConnector>,
     pub remote_ip: IpAddr,
+    pub config: &'static Config,
 }
 
+/// Return a new headers map with any hop-to-hop headers removed.
 fn without_hop_headers(headers: &header::Headers) -> header::Headers {
     headers.iter().filter(|h| !hop::is_hop_header(h.name())).collect()
 }
@@ -77,15 +81,38 @@ impl Service for Proxy {
         };
 
         let proxy_req = make_proxy_request(req, uri, self.remote_ip);
-        debug!("proxy_req: {:#?}", proxy_req);
+        trace!("proxy_req: {:#?}", proxy_req);
 
-        let future = self.client.request(proxy_req)
+        // Set up timeouts and make the proxied request
+
+        let conn_duration = self.config.server.timeouts.connect.clone();
+
+        let conn_timeout = match Timeout::new(conn_duration, self.client.handle()) {
+            Ok(x) => x,
+            Err(e) => return Box::new(ok(response::internal_server_error())),
+        };
+
+        // The future of the origin's response
+        let res_future = self.client.request(proxy_req)
             .then(|res| match res {
                 Ok(res) =>
                     Ok(make_proxy_response(res)),
                 Err(_) =>
                     Ok(response::internal_server_error()),
             });
+
+        let future = res_future.select2(conn_timeout).then(|result| match result {
+            Ok(Either::A((res, _))) => Ok(res),
+            Ok(Either::B((_timeout_error, res))) => {
+                // TODO: Look into future lifecycle. Surely I don't need to drop(res_future) myself?
+                Err(hyper::Error::Io(io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    "[timeout] client timed out during connect",
+                )))
+            },
+            Err(Either::A((res_error, _))) => Err(res_error),
+            Err(Either::B((timeout_error, res))) => Err(From::from(timeout_error)),
+        });
 
         Box::new(future)
     }

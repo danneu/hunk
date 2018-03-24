@@ -3,6 +3,7 @@ use std::error::Error;
 use std::path::PathBuf;
 use std::iter::FromIterator;
 use std::collections::HashSet;
+use std::time::Duration;
 
 use serde;
 use regex::Regex;
@@ -22,12 +23,27 @@ pub struct Config {
 #[derive(Debug, Clone)]
 pub struct Server {
     pub bind: SocketAddr,
+    pub timeouts: Timeouts
+}
+
+#[derive(Debug, Clone)]
+pub struct Timeouts {
+    pub connect: Duration,
+}
+
+impl Default for Timeouts {
+    fn default() -> Timeouts {
+        Timeouts {
+            connect: Duration::from_secs(5)
+        }
+    }
 }
 
 impl Default for Server {
     fn default() -> Self {
         Server {
             bind: default_bind().parse().unwrap(),
+            timeouts: Timeouts::default(),
         }
     }
 }
@@ -179,6 +195,7 @@ impl<'de> serde::Deserialize<'de> for Server {
         struct Http_ {
             #[serde(default = "default_bind")]
             bind: String,
+            timeouts: Option<Timeouts>,
         }
 
         let input = Http_::deserialize(deserializer)?;
@@ -198,6 +215,7 @@ impl<'de> serde::Deserialize<'de> for Server {
 
         Ok(Server {
             bind,
+            timeouts: input.timeouts.unwrap_or_else(|| Timeouts::default())
         })
     }
 }
@@ -315,6 +333,28 @@ impl<'de> serde::Deserialize<'de> for Cors {
             exposed_headers,
             allow_credentials: input.allow_credentials,
             max_age: input.max_age,
+        })
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Timeouts {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+    {
+        use serde::de::Error;
+
+        #[derive(Deserialize, Debug, Default)]
+        struct Timeouts_ {
+            connect: u64,
+        }
+
+        let mut input = Timeouts_::deserialize(deserializer)?;
+
+        let connect = Duration::from_millis(input.connect);
+
+        Ok(Timeouts {
+            connect
         })
     }
 }

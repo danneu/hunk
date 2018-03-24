@@ -104,6 +104,17 @@ origin = "*"
 bind = "localhost:3000"
 ```
 
+- `timeouts` (object): Set I/O timeouts when connecting/reading/writing to origins. So far only connection timeout is supported.
+    - `connect` (milliseconds): Amount of time to wait if origin is not sending initial data. Default = 5000.
+    
+        ```toml
+        [server]
+        timeouts = {
+            # Wait up to 5 seconds for 3rd party to start responding to our request.
+            connect = 5000
+        }
+        ```
+
 ### `vhost` blocks
 
 A config can specify any number of virtual hosts.
