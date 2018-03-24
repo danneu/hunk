@@ -46,6 +46,10 @@ pub fn get_entity_path(root: &Path, req_path: &str) -> Option<PathBuf> {
     let mut final_path = root.to_path_buf();
     final_path.push(&req_path[1..]);
 
+    if !final_path.starts_with(root) {
+        return None;
+    }
+
     Some(final_path)
 }
 
