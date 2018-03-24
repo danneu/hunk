@@ -28,3 +28,12 @@ chrono = "*"
 serde = "1.0"
 serde_derive = "1.0"
 toml = "*"
+
+[profile.dev]
+codegen-units = 4
+[profile.release]
+codegen-units = 4
+[profile.test]
+codegen-units = 4
+[profile.doc]
+codegen-units = 4
