@@ -1,6 +1,5 @@
 use std::error::Error;
 use std::fmt;
-use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
 use hyper::header;

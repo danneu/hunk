@@ -1,23 +1,13 @@
-use std::collections::HashMap;
 use std::fs::File;
-use std::hash::{Hash, Hasher};
-use std::net::{IpAddr, SocketAddr};
+use std::net::{IpAddr};
 use std::path::Path;
-use std::sync::{Arc, Mutex};
 
-use futures::Stream;
 use futures::{Future, future::ok};
 use futures_cpupool::CpuPool;
-use hyper::{self, header, Client, Method, Request, Response, StatusCode, Uri,
-            client::HttpConnector, server::{Http, Service}};
-use std::collections::HashSet;
-use tokio_core::reactor::Core;
-use unicase::Ascii;
-use url::Url;
+use hyper::{self, server::Service, header, Client, Method, Request, Response, StatusCode, client::HttpConnector};
 
 use config::{Config, Site};
 use entity;
-use host::Host;
 use mime;
 use negotiate;
 use path;

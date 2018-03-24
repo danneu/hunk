@@ -1,28 +1,13 @@
-use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
-use std::net::{IpAddr, SocketAddr};
-use std::sync::{Arc, Mutex};
+use std::net::{IpAddr};
 
 use chrono::prelude::Utc;
-use flate2;
-use futures::Sink;
-use futures::{future, Future};
+use futures::{Future};
 use futures_cpupool::CpuPool;
-use hyper::{self, header, Body, Client, Method, Request, Response, Uri, client::HttpConnector,
-            server::{Http, Service}};
-use std::collections::HashSet;
-use tokio_core::reactor::Core;
-use unicase::Ascii;
-use url::Url;
+use hyper::{self, header, Client, Request, Response, client::HttpConnector,
+            server::{Service}};
 
 use config::{self, Config, Site};
-use hop;
-use host::Host;
-use mime;
-use negotiate;
-use response;
 use service;
-use util;
 
 pub struct Log {
     pub config: &'static Config,

@@ -1,7 +1,7 @@
 /// The boot message is the pretty heads-up that prints on server boot if stdout is tty.
 use colored::Colorize;
 
-use config::{self, Config, CorsOrigin, Site};
+use config::{Config, CorsOrigin, Site};
 use host::Host;
 
 fn pretty_site(site: &Site) {

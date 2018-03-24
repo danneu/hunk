@@ -1,24 +1,15 @@
-use std::collections::HashMap;
-use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
 use std::io;
-use std::net::{IpAddr, SocketAddr};
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::net::{IpAddr};
 
 use futures::{Future, future::ok};
-use futures::{Stream, future::Either};
-use futures_cpupool::CpuPool;
+use futures::{future::Either};
 use hyper::{self, header, Client, Request, Response, Uri, client::HttpConnector,
-            server::{Http, Service}};
+            server::{Service}};
 use tokio_core::reactor::Handle;
-use tokio_core::reactor::{Core, Timeout};
-use unicase::Ascii;
-use url::Url;
+use tokio_core::reactor::{Timeout};
 
 use config::{Config, Site};
 use hop;
-use host::Host;
 use response;
 
 header! {

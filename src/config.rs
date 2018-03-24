@@ -333,7 +333,6 @@ impl<'de> serde::Deserialize<'de> for Timeouts {
     where
         D: serde::Deserializer<'de>,
     {
-        use serde::de::Error;
 
         #[derive(Deserialize, Debug, Default)]
         struct Timeouts_ {

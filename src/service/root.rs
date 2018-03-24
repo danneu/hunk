@@ -1,17 +1,10 @@
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
-use std::net::{IpAddr, SocketAddr};
-use std::sync::{Arc, Mutex};
+use std::net::{IpAddr};
 
-use futures::Stream;
 use futures::{Future, future::ok};
 use futures_cpupool::CpuPool;
-use hyper::{self, header, Client, Request, Response, Uri, client::HttpConnector,
-            server::{Http, Service}};
-use std::collections::HashSet;
-use tokio_core::reactor::Core;
-use unicase::Ascii;
-use url::Url;
+use hyper::{self, header, Client, Request, Response, client::HttpConnector,
+            server::{Service}};
 
 use config::{Config, Site};
 use host::Host;
@@ -88,7 +81,7 @@ fn fix_host_header(mut req: Request) -> Request {
 fn test_fix_host_header() {
     let mut req = Request::new(
         hyper::Method::Get,
-        "http://example.com:3333".parse::<Uri>().unwrap(),
+        "http://example.com:3333".parse::<hyper::Uri>().unwrap(),
     );
     req.headers_mut()
         .set(header::Host::new("localhost", Some(80)));

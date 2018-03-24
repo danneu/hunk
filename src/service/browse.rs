@@ -1,31 +1,18 @@
-use std::collections::HashMap;
 use std::fs;
-use std::hash::{Hash, Hasher};
 use std::io;
-use std::net::{IpAddr, SocketAddr};
+use std::net::{IpAddr};
 use std::path::Path;
-use std::sync::{Arc, Mutex};
 
-use flate2;
 use futures::{Future, future::ok};
 use futures::{stream, Sink, Stream};
 use futures_cpupool::CpuPool;
-use hyper::{self, header, Body, Chunk, Client, Method, Request, Response, Uri,
-            client::HttpConnector, server::{Http, Service}};
-use std::collections::HashSet;
-use tokio_core::reactor::Core;
-use unicase::Ascii;
-use url::Url;
+use hyper::{self, header, Chunk, Client, Method, Request, Response,
+            client::HttpConnector, server::{Service}};
 
-use config::{self, Config, Site};
-use hop;
-use host::Host;
-use mime;
-use negotiate;
+use config::{Config, Site};
 use path;
 use response;
 use service;
-use util;
 
 pub struct Browse {
     pub config: &'static Config,
