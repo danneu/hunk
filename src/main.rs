@@ -49,5 +49,5 @@ fn main() {
         }
     };
 
-    prox::serve(config)
+    prox::serve(&config)
 }
