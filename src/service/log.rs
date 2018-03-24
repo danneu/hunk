@@ -14,7 +14,7 @@ use unicase::Ascii;
 use std::collections::HashSet;
 use flate2;
 
-use config::{self, Config, Origin};
+use config::{self, Config, Site};
 use response;
 use host::Host;
 use hop;
@@ -32,12 +32,12 @@ pub struct Log {
 }
 
 impl Service for Log {
-    type Request = (&'static Origin, Request);
+    type Request = (&'static Site, Request);
     type Response = Response;
     type Error = hyper::Error;
     type Future = Box<Future<Item=Self::Response, Error=Self::Error>>;
 
-    fn call(&self, (origin, req): Self::Request) -> Self::Future {
+    fn call(&self, (site, req): Self::Request) -> Self::Future {
         let config = self.config;
         let pool = self.pool;
         let client = self.client;
@@ -53,9 +53,9 @@ impl Service for Log {
         };
 
         // Short-circuit if logging is disabled
-        let opts = match origin.log {
+        let opts = match site.log {
             None =>
-                return Box::new(next().call((origin, req))),
+                return Box::new(next().call((site, req))),
             Some(ref opts) =>
                 opts,
         };
@@ -63,7 +63,7 @@ impl Service for Log {
         // TODO: Figure out a way to avoid cloning the request
         let req2 = clone_req(&req);
 
-        Box::new(next().call((origin, req)).map(move |res| {
+        Box::new(next().call((site, req)).map(move |res| {
             log(remote_ip, &opts, &req2, &res);
             res
         }))

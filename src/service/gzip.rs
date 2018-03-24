@@ -13,7 +13,7 @@ use unicase::Ascii;
 use std::collections::HashSet;
 use flate2;
 
-use config::{self, Config, Origin};
+use config::{self, Config, Site};
 use response;
 use host::Host;
 use hop;
@@ -31,12 +31,12 @@ pub struct Gzip {
 }
 
 impl Service for Gzip {
-    type Request = (&'static Origin, Request);
+    type Request = (&'static Site, Request);
     type Response = Response;
     type Error = hyper::Error;
     type Future = Box<Future<Item=Self::Response, Error=Self::Error>>;
 
-    fn call(&self, (origin, req): Self::Request) -> Self::Future {
+    fn call(&self, (site, req): Self::Request) -> Self::Future {
         let config = self.config;
         let pool = self.pool;
         let client = self.client;
@@ -51,21 +51,21 @@ impl Service for Gzip {
             }
         };
 
-        let opts = match origin.gzip {
+        let opts = match site.gzip {
             None =>
-                return Box::new(next().call((origin, req))),
+                return Box::new(next().call((site, req))),
             Some(ref opts) =>
                 opts
         };
 
         // Only compress GET and HEAD
         if *req.method() != Method::Get && *req.method() != Method::Head {
-            return Box::new(next().call((origin, req)))
+            return Box::new(next().call((site, req)))
         }
 
         let req_accept_encoding = req.headers().get::<header::AcceptEncoding>().cloned();
 
-        Box::new(next().call((origin, req)).map(move |mut res| {
+        Box::new(next().call((site, req)).map(move |mut res| {
             handle_response(pool, res, opts, req_accept_encoding)
         }))
     }

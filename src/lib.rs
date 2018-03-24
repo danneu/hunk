@@ -72,11 +72,11 @@ pub fn serve(config: Config) {
     let pool = Box::new(CpuPool::new(1)).leak();
     let config = Box::new(config.clone()).leak();
     let client = Box::new(Client::new(&handle)).leak();
-    let origins = {
+    let sites = {
         let mut map = HashMap::new();
-        for origin in config.clone().origins {
-            for host in &origin.host {
-                map.insert(host.clone(), origin.clone());
+        for site in config.clone().sites {
+            for host in &site.host {
+                map.insert(host.clone(), site.clone());
             }
         }
         Box::new(map).leak()
@@ -90,7 +90,7 @@ pub fn serve(config: Config) {
         service::root::Root {
             client,
             config,
-            origins,
+            sites,
             remote_ip,
             pool,
         }

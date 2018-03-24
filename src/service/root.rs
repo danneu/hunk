@@ -12,7 +12,7 @@ use url::Url;
 use unicase::Ascii;
 use std::collections::HashSet;
 
-use config::{Origin, Config};
+use config::{Site, Config};
 use response;
 use host::Host;
 use service;
@@ -22,7 +22,7 @@ pub struct Root {
     pub pool: &'static CpuPool,
     pub remote_ip: IpAddr,
     pub client: &'static Client<HttpConnector>,
-    pub origins: &'static HashMap<Host, Origin>,
+    pub sites: &'static HashMap<Host, Site>,
 }
 
 impl Service for Root {
@@ -41,13 +41,13 @@ impl Service for Root {
         let mut req = req;
         let req = fix_host_header(req);
 
-        let origin = req
+        let site = req
             .headers()
             .get::<header::Host>()
             .map(|header| Host::from(header.clone()))
-            .and_then(|host| self.origins.get(&host));
+            .and_then(|host| self.sites.get(&host));
 
-        let origin = match origin {
+        let site = match site {
             Some(x) =>
                 x,
             None =>
@@ -61,7 +61,7 @@ impl Service for Root {
             remote_ip: self.remote_ip,
         };
 
-        Box::new(next.call((origin, req)).map(|mut res| {
+        Box::new(next.call((site, req)).map(|mut res| {
             res.headers_mut().set(header::Server::new("Hunk"));
             res
         }))

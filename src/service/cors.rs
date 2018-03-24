@@ -14,7 +14,7 @@ use unicase::Ascii;
 use std::collections::HashSet;
 use flate2;
 
-use config::{self, Config, Origin, CorsOrigin};
+use config::{self, Config, Site, CorsOrigin};
 use response;
 use host::Host;
 use hop;
@@ -32,12 +32,12 @@ pub struct Cors {
 }
 
 impl Service for Cors {
-    type Request = (&'static Origin, Request);
+    type Request = (&'static Site, Request);
     type Response = Response;
     type Error = hyper::Error;
     type Future = Box<Future<Item=Self::Response, Error=Self::Error>>;
 
-    fn call(&self, (origin, req): Self::Request) -> Self::Future {
+    fn call(&self, (site, req): Self::Request) -> Self::Future {
         let config = self.config;
         let pool = self.pool;
         let client = self.client;
@@ -53,9 +53,9 @@ impl Service for Cors {
         };
 
         // Short-circuit if logging is disabled
-        let config: &config::Cors = match origin.cors {
+        let config: &config::Cors = match site.cors {
             None =>
-                return Box::new(next().call((origin, req))),
+                return Box::new(next().call((site, req))),
             Some(ref opts) =>
                 opts,
         };
@@ -63,9 +63,9 @@ impl Service for Cors {
         // Bail if request has no Origin header
         let req_origin: header::Origin = match req.headers().get::<header::Origin>() {
             None =>
-                return Box::new(next().call((origin, req))),
-            Some(origin) =>
-                origin.clone(),
+                return Box::new(next().call((site, req))),
+            Some(site) =>
+                site.clone(),
         };
 
         let allow_origin = match config.origin {
@@ -131,7 +131,7 @@ impl Service for Cors {
 
             Box::new(ok(res))
         } else {
-            Box::new(next().call((origin, req)).map(move |mut res: Response| {
+            Box::new(next().call((site, req)).map(move |mut res: Response| {
                 // Bail if Origin does not match our allowed set
                 if !allow_origin {
                     return res

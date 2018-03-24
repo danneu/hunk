@@ -3,13 +3,13 @@
 
 use colored::Colorize;
 
-use config::{self, Config, Origin, CorsOrigin};
+use config::{self, Config, Site, CorsOrigin};
 use host::Host;
 
-fn pretty_origin(origin: &Origin) {
+fn pretty_site(site: &Site) {
     println!(
-        "vhost: [{hosts}]",
-        hosts = origin.host.iter()
+        "site: [{hosts}]",
+        hosts = site.host.iter()
             .map(Host::to_string)
             .map(|s| s.bright_white().to_string())
             .collect::<Vec<_>>()
@@ -20,7 +20,7 @@ fn pretty_origin(origin: &Origin) {
 
     println!(
         "- proxy:  {}",
-        match origin.url {
+        match site.url {
             None => "off".to_string(),
             Some(ref url) => format!("{}   -> {}", "on".green().bold(), url),
         }
@@ -30,7 +30,7 @@ fn pretty_origin(origin: &Origin) {
 
     println!(
         "- gzip:   {}",
-        match origin.gzip.as_ref() {
+        match site.gzip.as_ref() {
             None => "off".to_string(),
             Some(_) => format!("{}", "on".green().bold()),
         }
@@ -40,7 +40,7 @@ fn pretty_origin(origin: &Origin) {
 
     println!(
         "- cors:   {}",
-        match origin.cors.as_ref() {
+        match site.cors.as_ref() {
             None => "off".to_string(),
             Some(opts) => {
                 let mut s = format!("{}", "on".green().bold());
@@ -61,7 +61,7 @@ fn pretty_origin(origin: &Origin) {
 
     println!(
         "- log:    {}",
-        match origin.log {
+        match site.log {
             None => "off".to_string(),
             Some(_) => {
                 let mut s = format!("{}", "on".green().bold());
@@ -76,7 +76,7 @@ fn pretty_origin(origin: &Origin) {
 
     println!(
         "- browse: {}",
-        match origin.browse {
+        match site.browse {
             None => "off".to_string(),
             Some(_) => format!("{}", "on".green().bold()),
         }
@@ -86,7 +86,7 @@ fn pretty_origin(origin: &Origin) {
 
     println!(
         "- root:   {}",
-        match origin.root {
+        match site.root {
             None => "off".to_string(),
             Some(ref root) =>
                 format!(
@@ -109,9 +109,9 @@ pub fn pretty(config: &Config) {
         config.server.bind.to_string().replace("127.0.0.1", "localhost").bright_white().bold()
     );
 
-    // ORIGINS
+    // SITES
 
-    for origin in &config.origins {
-        pretty_origin(origin)
+    for site in &config.sites {
+        pretty_site(site)
     }
 }

@@ -16,7 +16,7 @@ use unicase::Ascii;
 use std::collections::HashSet;
 use flate2;
 
-use config::{self, Config, Origin};
+use config::{self, Config, Site};
 use response;
 use host::Host;
 use hop;
@@ -35,12 +35,12 @@ pub struct Browse {
 }
 
 impl Service for Browse {
-    type Request = (&'static Origin, Request);
+    type Request = (&'static Site, Request);
     type Response = Response;
     type Error = hyper::Error;
     type Future = Box<Future<Item=Self::Response, Error=Self::Error>>;
 
-    fn call(&self, (origin, req): Self::Request) -> Self::Future {
+    fn call(&self, (site, req): Self::Request) -> Self::Future {
         let config = self.config;
         let pool = self.pool;
         let client = self.client;
@@ -56,16 +56,16 @@ impl Service for Browse {
         };
 
         // Short-circuit if root or browse opts are not set
-        let root = match (&origin.root, &origin.browse) {
+        let root = match (&site.root, &site.browse) {
             (&Some(ref x), &Some(_)) =>
                 x,
             _ =>
-                return next().call((origin, req)),
+                return next().call((site, req)),
         };
 
         // Only handle GET, OPTIONS, HEAD
         if *req.method() != Method::Get && *req.method() != Method::Head && *req.method() != Method::Options {
-            return Box::new(next().call((origin, req)))
+            return Box::new(next().call((site, req)))
         }
 
         let entity_path = match path::get_entity_path(root, req.path()) {
@@ -84,9 +84,9 @@ impl Service for Browse {
                     Box::new(ok(res)),
                 // If not a directory or file not found, then continue to next handler
                 Err(ref e) if e.raw_os_error() == Some(20) =>
-                    next().call((origin, req)),
+                    next().call((site, req)),
                 Err(ref e) if e.kind() == io::ErrorKind::NotFound =>
-                    next().call((origin, req)),
+                    next().call((site, req)),
                 Err(e) => {
                     error!("error in handle_folder: {}", e);
                     Box::new(ok(response::internal_server_error()))

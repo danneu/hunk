@@ -16,8 +16,8 @@ use host::Host;
 #[derive(Deserialize, Debug, Clone, Default)]
 pub struct Config {
     pub server: Server,
-    #[serde(rename = "vhost")]
-    pub origins: Vec<Origin>,
+    #[serde(rename = "site")]
+    pub sites: Vec<Site>,
 }
 
 #[derive(Debug, Clone)]
@@ -62,7 +62,7 @@ fn default_port() -> u32 {
 
 
 #[derive(Debug, Clone)]
-pub struct Origin {
+pub struct Site {
     pub host: Vec<Host>,
     pub url: Option<Url>,
     pub root: Option<PathBuf>,
@@ -98,7 +98,7 @@ fn default_log_format() -> String {
     super::service::log::COMMON_LOG_FORMAT.to_string()
 }
 
-impl<'de> serde::Deserialize<'de> for Origin {
+impl<'de> serde::Deserialize<'de> for Site {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
             D: serde::Deserializer<'de>,
@@ -114,7 +114,7 @@ impl<'de> serde::Deserialize<'de> for Origin {
         }
 
         #[derive(Deserialize, Debug, Clone)]
-        struct Origin_ {
+        struct Site_ {
             host: Hosts_,
             url: Option<String>,
             root: Option<PathBuf>,
@@ -124,7 +124,7 @@ impl<'de> serde::Deserialize<'de> for Origin {
             cors: Option<Cors>,
         }
 
-        let mut input: Origin_ = Origin_::deserialize(deserializer)?;
+        let mut input: Site_ = Site_::deserialize(deserializer)?;
 
         // FIXME: This file is a mess.
         let url = match input.clone().url.map(|url| url.parse::<Url>()) {
@@ -148,7 +148,7 @@ impl<'de> serde::Deserialize<'de> for Origin {
             },
         };
 
-        Ok(Origin {
+        Ok(Site {
             host,
             url,
             // It's okay if canonicalize fails. It's just to improve the boot message.

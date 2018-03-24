@@ -36,7 +36,7 @@ bind = "localhost:3000"
 ```
 
 Hunk will listen on :3000 but will just respond with 404s 
-because no vhosts have been configured.
+because no sites have been configured.
 
 ----
 
@@ -49,19 +49,19 @@ for browsing the filesystem:
 [server]
 bind = "localhost:3000"
 
-[[vhost]]
+[[site]]
 host = "localhost:3000"
 root = "./public"
-[vhost.browse]
-[vhost.gzip]
-[vhost.log]
+[site.browse]
+[site.gzip]
+[site.log]
 ```
 
-Notice how `vhost.host` matches `server.bind`.
+Notice how `site.host` matches `server.bind`.
 
 ----
 
-Here's a more advanced config with multiple vhosts.
+Here's a more advanced config with multiple sites.
 
 Requests that have headers "Host: foo.com" or "Host: locahost:4001" are 
 proxied to another server listening on port 4001. Those requests 
@@ -76,20 +76,20 @@ have CORS enabled but have whitelisted all origins.
 # (Required) The address hunk will listen on
 bind = "localhost:3000"
 
-[[vhost]]
+[[site]]
 # (Required) Can provide one or an array of hosts
 host = ["foo.com", "localhost:4001"]
 # (Optional) Provide a url if you want to to proxy requests from host -> url
 url = "http://localhost:4001"
 # (Optional) Static assets directory
 root = "foo/public"
-[vhost.cors]
+[site.cors]
 origin = ["http://catdog.com"]
 
-[[vhost]]
+[[site]]
 host = "example.com"
 url = "http://localhost:4002"
-[vhost.cors]
+[site.cors]
 origin = "*"
 ```
 
@@ -113,48 +113,48 @@ bind = "localhost:3000"
         }
         ```
 
-### `vhost` blocks
+### `site` blocks
 
 A config can specify any number of virtual hosts.
 
 ```toml
-[[vhost]]
+[[site]]
 host = ""
 ```
 
 Required:
 
 - `host` (string or array or strings): If an incoming request has a `Host` header that matches one of
-    a vhost's hosts, then that vhost block will specify how to handle the request.
+    a site's hosts, then that site block will specify how to handle the request.
     
 Optional:
 
-- `url` (url string): Requests to this vhost will be proxied to this `url` where another server will handle it.
+- `url` (url string): Requests to this site will be proxied to this `url` where another server will handle it.
 - `root` (file path string): Hunk will try to serve the request from this directory of static assets.
 - `gzip` (object): Apply the default gzip handler to responses. Hunk will negotiate an encoding.
     - `threshold` (optional int): The minimum byte length for hunk to gzip. Default = 1400.
     
         ```toml
-        [[vhost]]
+        [[site]]
         host = "..."
-        [vhost.gzip] # Default gzip middleware
+        [site.gzip] # Default gzip middleware
         ```
         
         ```toml
-        [[vhost]]
+        [[site]]
         host = "..."
-        [vhost.gzip] 
+        [site.gzip] 
         threshold = 16000 # Only gzip files larger than 16kb
         ```
 - `log` (object): Log request/response to stdout.
 
     ```toml
-    [[vhost]]
+    [[site]]
     # ...
-    [vhost.log]
+    [site.log]
     ```
 
-- `cors` (object): Apply CORS <https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS> response headers to a vhost.
+- `cors` (object): Apply CORS <https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS> response headers to a site.
     - `origin` (array of strings or "*" for wildcard). Ex: `["http://example.com]`.
     - `methods` (optional array of strings). Default: `["GET", "HEAD", "OPTIONS"]`.
     - `allowed_headers` (optional array of strings). Default: `[]`. Ex: `["X-Foo", "X-Bar"]`.
@@ -163,16 +163,16 @@ Optional:
     - `max_age` (optional int) seconds
     
         ```toml
-        [vhost.cors]
+        [site.cors]
         origin = "*"
         methods = ["GET"]
         ```
         
         ```toml
-        [[vhost]]
+        [[site]]
         # Lets foo.com and bar.com send with-credentials cross domain requests
         # thus they will be able to access cookies.
-        [vhost.cors]
+        [site.cors]
         origin = ["foo.com", "bar.com"]
         allow_credentials = true
         ```

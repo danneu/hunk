@@ -14,7 +14,7 @@ use url::Url;
 use unicase::Ascii;
 use std::collections::HashSet;
 
-use config::{Origin, Config};
+use config::{Site, Config};
 use response;
 use host::Host;
 use service;
@@ -155,12 +155,12 @@ fn handle_request(pool: &CpuPool, root: &'static Path, req: Request) -> impl Fut
 }
 
 impl Service for Serve {
-    type Request = (&'static Origin, Request);
+    type Request = (&'static Site, Request);
     type Response = Response;
     type Error = hyper::Error;
     type Future = Box<Future<Item=Self::Response, Error=Self::Error>>;
 
-    fn call(&self, (origin, req): Self::Request) -> Self::Future {
+    fn call(&self, (site, req): Self::Request) -> Self::Future {
         let client = self.client;
         let remote_ip = self.remote_ip;
         let config = self.config;
@@ -172,11 +172,11 @@ impl Service for Serve {
         };
 
         // Short-circuit if root is not set.
-        let root = match origin.root {
+        let root = match site.root {
             Some(ref x) =>
                 x,
             None => {
-                return next().call((origin, req))
+                return next().call((site, req))
             }
         };
 
@@ -191,7 +191,7 @@ impl Service for Serve {
                 Ok((_, Some(res))) =>
                     Box::new(ok(res)),
                 Ok((req, None)) =>
-                    next().call((origin, req)),
+                    next().call((site, req)),
             }
         }))
     }

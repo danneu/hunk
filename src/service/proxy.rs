@@ -14,7 +14,7 @@ use hyper::{self, Request, Response, server::{Http, Service}, header, Uri, Clien
 use url::Url;
 use unicase::Ascii;
 
-use config::{Config, Origin};
+use config::{Config, Site};
 use response;
 use host::Host;
 use hop;
@@ -56,14 +56,14 @@ fn make_proxy_response(mut res: Response) -> Response {
 }
 
 impl Service for Proxy {
-    type Request = (&'static Origin, Request);
+    type Request = (&'static Site, Request);
     type Response = Response;
     type Error = hyper::Error;
     type Future = Box<Future<Item=Self::Response, Error=Self::Error>>;
 
-    fn call(&self, (origin, req): Self::Request) -> Self::Future {
-        // Proxy only enabled if vhost.url is given.
-        let dest_url = match origin.url {
+    fn call(&self, (site, req): Self::Request) -> Self::Future {
+        // Proxy only enabled if site.url is given.
+        let dest_url = match site.url {
             None =>
                 return Box::new(ok(response::not_found())),
             Some(ref url) =>
