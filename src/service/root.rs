@@ -32,6 +32,15 @@ impl Service for Root {
     type Future = Box<Future<Item=Self::Response, Error=Self::Error>>;
 
     fn call(&self, req: Self::Request) -> Self::Future {
+        // Client must send Host header.
+        // https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-14#section-9.4
+        if req.headers().get::<header::Host>().is_none() {
+            return Box::new(ok(response::bad_request("missing host header")))
+        }
+
+        let mut req = req;
+        let req = fix_host_header(req);
+
         let origin = req
             .headers()
             .get::<header::Host>()
@@ -57,4 +66,34 @@ impl Service for Root {
             res
         }))
     }
+}
+
+/// If the request path is absolute, then the Host header is replaced with it.
+///
+/// https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-14#section-9.4
+///
+/// `echo -ne 'GET http://localhost:3000/a HTTP/1.1\r\nHost: example.com\r\nContent-Length: 5\r\n\r\nHello' | nc localhost 3000`
+fn fix_host_header(mut req: Request) -> Request {
+    if !req.uri().is_absolute() {
+        return req
+    }
+
+    let new_host = match &req.uri().host() {
+        &Some(ref host) =>
+            header::Host::new(host.to_string(), req.uri().port()),
+        &None =>
+            return req,
+    };
+
+    req.headers_mut().set(new_host);
+    req
+}
+
+
+#[test]
+fn test_fix_host_header() {
+    let mut req = Request::new(hyper::Method::Get, "http://example.com:3333".parse::<Uri>().unwrap());
+    req.headers_mut().set(header::Host::new("localhost", Some(80)));
+    let req2 = fix_host_header(req);
+    assert_eq!(req2.headers().get::<header::Host>(), Some(&header::Host::new("example.com", Some(3333))))
 }

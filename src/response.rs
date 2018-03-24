@@ -2,6 +2,14 @@ use hyper::{header, Response, StatusCode};
 
 // CANNED RESPONSES
 
+pub fn bad_request(msg: &'static str) -> Response {
+    Response::new()
+        .with_status(StatusCode::BadRequest)
+        .with_header(header::ContentType::plaintext())
+        .with_header(header::ContentLength(msg.len() as u64))
+        .with_body(msg)
+}
+
 pub fn method_not_allowed() -> Response {
     const TEXT: &str = "Only GET, HEAD, OPTIONS allowed";
     Response::new()

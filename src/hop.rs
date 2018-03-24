@@ -2,7 +2,9 @@ use std::collections::HashSet;
 
 use unicase::Ascii;
 
-// Pass in header.name()
+/// Determine if a header is a hop-by-hop header.
+///
+/// They should be stripped from traffic that passes through the proxy.
 pub fn is_hop_header(header: &str) -> bool {
     HOP_HEADERS.contains(&Ascii::new(header))
 }
@@ -18,4 +20,11 @@ lazy_static! {
         Ascii::new("Transfer-Encoding"),
         Ascii::new("Upgrade"),
     ];
+}
+
+#[test]
+fn test_is_hop_header() {
+    use hyper::header::Connection;
+    let header = Connection::keep_alive();
+    assert!(is_hop_header(&format!("{}", header)));
 }

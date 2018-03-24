@@ -1,4 +1,4 @@
-// base92 etag encoding. the goal is to use every valid char according to spec.
+/// Encodes data into ETag-friendly characters.
 pub fn encode(mut n: u64) -> String {
     let cap = 1 + if n == 0 {
         // special case since log(36, 0) is -∞
