@@ -28,7 +28,7 @@ A prox executable is now available at `./target/release/prox`.
     
 ## Usage
 
-Whenever you run `prox`, prox will look for a `Hunk.toml` config file in the current directory.
+Whenever you run `prox`, prox will look for a `Prox.toml` config file in the current directory.
 
 Here's the minimal config:
 
@@ -37,7 +37,7 @@ Here's the minimal config:
 bind = "localhost:3000"
 ```
 
-Hunk will listen on :3000 but will just respond with 404s 
+Prox will listen on :3000 but will just respond with 404s 
 because no sites have been configured.
 
 ----
@@ -126,8 +126,8 @@ Required:
 Optional:
 
 - `url` (url string): Requests to this site will be proxied to this `url` where another server will handle it.
-- `root` (file path string): Hunk will try to serve the request from this directory of static assets.
-- `gzip` (object): Apply the default gzip handler to responses. Hunk will negotiate an encoding.
+- `root` (file path string): Prox will try to serve the request from this directory of static assets.
+- `gzip` (object): Apply the default gzip handler to responses. Prox will negotiate an encoding.
     - `threshold` (optional int): The minimum byte length for prox to gzip. Default = 1400.
     
         ```toml
