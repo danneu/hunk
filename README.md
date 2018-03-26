@@ -2,7 +2,7 @@
 
 # prox [![Build Status](https://travis-ci.org/danneu/prox.svg?branch=master)](https://travis-ci.org/danneu/prox)
 
-A simple reverse proxy + asset server built with Rust.
+A simple, hobby reverse proxy + asset server built with Rust.
 
 ## Features
 
