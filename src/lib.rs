@@ -45,6 +45,6 @@ mod response;
 mod server;
 mod service;
 
-pub use config::{Browse, Config, Gzip, Log, Server, Site, Timeouts};
+pub use config::{Config, Gzip, Log, Server, Site, Timeouts, Serve};
 
 pub use server::serve;

@@ -7,7 +7,7 @@ use futures_cpupool::CpuPool;
 use hyper::{self, header, Client, Method, Request, Response, StatusCode, client::HttpConnector,
             server::Service};
 
-use config::{Config, Site};
+use config::{self, Config, Site};
 use entity;
 use mime;
 use negotiate;
@@ -31,6 +31,7 @@ fn handle_request_sync(
     pool: CpuPool,
     root: &'static Path,
     req: Request,
+    dotfiles: &bool,
 ) -> (Request, Option<Response>) {
     if *req.method() != Method::Get && *req.method() != Method::Head
         && *req.method() != Method::Options
@@ -44,6 +45,11 @@ fn handle_request_sync(
             return (req, None),
         Some(path) => path,
     };
+
+    // Short-circuit if dotfile forbidden
+    if !dotfiles && entity_path.file_name().and_then(|x| x.to_str()).map(|x| x.starts_with(".")).unwrap_or(false) {
+        return (req, None)
+    }
 
     let file = match File::open(&entity_path) {
         Err(_) =>// return Box::new(ok(response::not_found())),
@@ -156,8 +162,9 @@ fn handle_request(
     pool: &CpuPool,
     root: &'static Path,
     req: Request,
+    dotfiles: &bool,
 ) -> impl Future<Item = (Request, Option<Response>), Error = hyper::Error> {
-    pool.spawn(ok(handle_request_sync(pool.clone(), root, req)))
+    pool.spawn(ok(handle_request_sync(pool.clone(), root, req, dotfiles)))
 }
 
 impl Service for Serve {
@@ -179,15 +186,20 @@ impl Service for Serve {
             handle,
         };
 
-        // Short-circuit if root is not set.
-        let root = match site.root {
-            Some(ref x) => x,
+        // Short-circuit if serve is not set.
+        let config::Serve { ref root, ref dotfiles, .. } = match &site.serve {
+            Some(x) => x,
             None => return next().call((site, req)),
         };
 
         // See if path hits a static file.
 
-        let future = handle_request(self.pool, root.as_path(), req);
+        let future = handle_request(
+            self.pool,
+            &root,
+            req,
+            &dotfiles,
+        );
 
         Box::new(future.then(move |result| match result {
             Ok((_, Some(res))) => Box::new(ok(res)),

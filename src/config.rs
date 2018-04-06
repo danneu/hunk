@@ -63,11 +63,19 @@ fn default_port() -> u32 {
 pub struct Site {
     pub host: Vec<Host>,
     pub url: Option<Url>,
-    pub root: Option<PathBuf>,
+    pub serve: Option<Serve>,
     pub gzip: Option<Gzip>,
-    pub browse: Option<Browse>,
     pub log: Option<Log>,
     pub cors: Option<Cors>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Serve {
+    pub root: PathBuf,
+    #[serde(default)]
+    pub browse: bool,
+    #[serde(default)]
+    pub dotfiles: bool,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -81,13 +89,6 @@ pub struct Gzip {
 
 fn default_gzip_threshold() -> u64 {
     1400
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct Browse {
-    // Security: defaults to false
-    #[serde(default)]
-    pub dotfiles: bool,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -118,9 +119,8 @@ impl<'de> serde::Deserialize<'de> for Site {
         struct Site_ {
             host: Hosts_,
             url: Option<String>,
-            root: Option<PathBuf>,
+            serve: Option<Serve>,
             gzip: Option<Gzip>,
-            browse: Option<Browse>,
             log: Option<Log>,
             cors: Option<Cors>,
         }
@@ -147,9 +147,8 @@ impl<'de> serde::Deserialize<'de> for Site {
         Ok(Site {
             host,
             url,
-            root: input.root,
+            serve: input.serve,
             gzip: input.gzip,
-            browse: input.browse,
             log: input.log,
             cors: input.cors,
         })

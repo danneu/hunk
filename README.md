@@ -53,7 +53,7 @@ bind = "localhost:3000"
 
 [[site]]
 host = "localhost:3000"
-root = "./public"
+serve = { root = "./public" }
 [site.browse]
 [site.gzip]
 [site.log]
@@ -80,7 +80,7 @@ bind = "localhost:3000"
 [[site]]
 host = ["foo.com", "localhost:4001"]
 url = "http://localhost:4001"
-root = "foo/public"
+serve = { root = "foo/public" }
 [site.cors]
 origin = ["http://catdog.com"]
 
@@ -126,7 +126,14 @@ Required:
 Optional:
 
 - `url` (url string): Requests to this site will be proxied to this `url` where another server will handle it.
-- `root` (file path string): Prox will try to serve the request from this directory of static assets.
+- `serve` (object): Serve requests from a directory of static files. If no file matched, then pass
+  the request down the middleware chain.
+    - `root` (file path string): Path to the directory of files to serve.
+    - `dotfiles` (optional bool): If true, then show and serve files that start with a dot ".". Default: `false`.
+    - `browse` (optional bool): If true, then render a folder explorer UI that lets users click to navigate around
+      your root folder. Default: `false`.
+      
+      ![browser screenshot](/img/browse.png)
 - `gzip` (object): Apply the default gzip handler to responses. Prox will negotiate an encoding.
     - `threshold` (optional int): The minimum byte length for prox to gzip. Default = 1400.
     
@@ -172,12 +179,6 @@ Optional:
         origin = ["foo.com", "bar.com"]
         allow_credentials = true
         ```
-        
-- `browse` (object): When a request hits a folder, render an html page that displays the folder contents
-    and lets the user navigate/browse the files.
-    - `dotfiles` (optional bool): Whether files that start with a dot "." should appear in the list. Default: `false`.
-    
-    ![browser screenshot](/img/browse.png)
         
 ## Development
 

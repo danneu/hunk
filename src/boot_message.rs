@@ -1,7 +1,7 @@
 /// The boot message is the pretty heads-up that prints on server boot if stdout is tty.
 use colored::Colorize;
 
-use config::{Config, CorsOrigin, Site, Browse};
+use config::{Config, CorsOrigin, Site, Serve};
 use host::Host;
 
 fn pretty_site(site: &Site) {
@@ -74,30 +74,18 @@ fn pretty_site(site: &Site) {
         }
     );
 
-    // BROWSE
+    // SERVE
 
     println!(
-        "- browse: {}",
-        match site.browse {
+        "- serve:   {}",
+        match site.serve {
             None => "off".to_string(),
-            Some(Browse { dotfiles }) => format!(
-                "{} {}",
+            Some(Serve { ref root, dotfiles, browse }) => format!(
+                "{} {}{}{}",
                 "on".green().bold(),
-                if dotfiles { "(showing dotfiles)" } else { "" }
-            ),
-        }
-    );
-
-    // ROOT
-
-    println!(
-        "- root:   {}",
-        match site.root {
-            None => "off".to_string(),
-            Some(ref root) => format!(
-                "{} {}",
-                "on".green().bold(),
-                root.to_str().unwrap_or("").to_string().bright_white()
+                root.to_str().unwrap_or("").to_string().bright_white(),
+                if browse { " [browse]" } else { "" },
+                if dotfiles { " [dotfiles]" } else { "" }
             ),
         }
     );

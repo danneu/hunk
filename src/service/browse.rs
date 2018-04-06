@@ -46,9 +46,9 @@ impl Service for Browse {
         };
 
         // Short-circuit if root or browse opts are not set
-        let (root, dotfiles) = match (&site.root, &site.browse) {
-            (&Some(ref root), &Some(config::Browse { ref dotfiles })) => (root, dotfiles),
-            _ => return next().call((site, req)),
+        let (root, dotfiles) = match &site.serve {
+            None => return next().call((site, req)),
+            Some(config::Serve { ref root, ref dotfiles, .. }) => (root, dotfiles),
         };
 
         // Only handle GET, OPTIONS, HEAD
