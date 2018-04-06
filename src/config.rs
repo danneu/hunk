@@ -84,7 +84,11 @@ fn default_gzip_threshold() -> u64 {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct Browse {}
+pub struct Browse {
+    // Security: defaults to false
+    #[serde(default)]
+    pub dotfiles: bool,
+}
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Log {

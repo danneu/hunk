@@ -175,6 +175,7 @@ Optional:
         
 - `browse` (object): When a request hits a folder, render an html page that displays the folder contents
     and lets the user navigate/browse the files.
+    - `dotfiles` (optional bool): Whether files that start with a dot "." should appear in the list. Default: `false`.
     
     ![browser screenshot](/img/browse.png)
         

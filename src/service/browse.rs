@@ -9,7 +9,7 @@ use futures_cpupool::CpuPool;
 use hyper::{self, header, Chunk, Client, Method, Request, Response, client::HttpConnector,
             server::Service};
 
-use config::{Config, Site};
+use config::{self, Config, Site};
 use path;
 use response;
 use service;
@@ -46,8 +46,8 @@ impl Service for Browse {
         };
 
         // Short-circuit if root or browse opts are not set
-        let root = match (&site.root, &site.browse) {
-            (&Some(ref x), &Some(_)) => x,
+        let (root, dotfiles) = match (&site.root, &site.browse) {
+            (&Some(ref root), &Some(config::Browse { ref dotfiles })) => (root, dotfiles),
             _ => return next().call((site, req)),
         };
 
@@ -64,7 +64,7 @@ impl Service for Browse {
         };
 
         let future =
-            Box::new(pool.spawn_fn(move || handle_folder(pool, root, entity_path.as_path())));
+            Box::new(pool.spawn_fn(move || handle_folder(pool, root, entity_path.as_path(), dotfiles)));
 
         Box::new(future.then(move |res| {
             match res {
@@ -90,7 +90,7 @@ struct FolderItem {
 
 const CSS: &str = include_str!("../assets/browse.css");
 
-fn handle_folder(pool: &CpuPool, root: &Path, path: &Path) -> io::Result<Response> {
+fn handle_folder(pool: &CpuPool, root: &Path, path: &Path, dotfiles: &bool) -> io::Result<Response> {
     let (tx, body) = hyper::Body::pair();
 
     let mut entries: Vec<FolderItem> = fs::read_dir(path)?
@@ -101,6 +101,11 @@ fn handle_folder(pool: &CpuPool, root: &Path, path: &Path) -> io::Result<Respons
                     None => return None,
                     Some(filename) => filename.to_string_lossy().to_string(),
                 };
+
+                // Skip dotfiles unless we want to serve them
+                if !dotfiles && filename.starts_with(".") {
+                    return None
+                }
 
                 let href = format!(
                     "/{}",
