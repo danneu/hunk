@@ -1,6 +1,6 @@
 [package]
 name = "prox"
-version = "0.0.8"
+version = "0.0.9"
 authors = ["danneu"]
 publish = false
 
