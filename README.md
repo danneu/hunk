@@ -1,6 +1,6 @@
 ![prox](/img/prox.png)
 
-# prox [![Build Status](https://travis-ci.org/danneu/prox.svg?branch=master)](https://travis-ci.org/danneu/prox)
+# prox [![Build Status](https://travis-ci.org/danneu/prox.svg?branch=master)](https://travis-ci.org/danneu/prox) ![Stability](https://img.shields.io/badge/stability-experimental-orange.svg)
 
 A simple, hobby reverse proxy + asset server built with Rust.
 
