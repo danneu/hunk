@@ -4,9 +4,6 @@ version = "0.0.8"
 authors = ["danneu"]
 publish = false
 
-[package.metadata.release]
-no-dev-version = true
-
 [dependencies]
 url = "*"
 hyper = "0.11"
