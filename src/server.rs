@@ -6,7 +6,8 @@ use futures::{Future, Stream};
 use futures_cpupool::CpuPool;
 use hyper::{Chunk, Client, server::Http};
 use leak::Leak;
-use tokio_core::{net::TcpListener, reactor::Core};
+use tokio_core::{reactor::Core};
+use tokio::net::{TcpListener, TcpStream};
 
 use boot_message;
 use config::Config;
@@ -38,7 +39,7 @@ pub fn serve(config: &Config) {
     let mut http: Http<Chunk> = Http::new();
     http.sleep_on_errors(true);
 
-    let listener = TcpListener::bind(&config.server.bind, handle).unwrap();
+    let listener = TcpListener::bind(&config.server.bind).unwrap();
     let factory = move |remote_ip| service::root::Root {
         client,
         config,
@@ -48,7 +49,17 @@ pub fn serve(config: &Config) {
         handle,
     };
 
-    let future = listener.incoming().for_each(move |(socket, peer)| {
+    let future = listener.incoming().for_each(move |socket: TcpStream| {
+        // TODO: When does socket.peer_addr() fail?
+        // TODO: Best way to handle it?
+        let peer = match socket.peer_addr() {
+            Err(e) => {
+                error!("failed to get peer addr from socket: {}", e);
+                return Ok(())
+            },
+            Ok(peer) => peer,
+        };
+
         let conn = http.serve_connection(socket, factory(peer.ip()))
             .map(|_| ())
             .map_err(|e| {
