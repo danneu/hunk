@@ -103,7 +103,7 @@ fn handle_folder(pool: &CpuPool, root: &Path, path: &Path, dotfiles: &bool) -> i
                 };
 
                 // Skip dotfiles unless we want to serve them
-                if !dotfiles && filename.starts_with(".") {
+                if !dotfiles && filename.starts_with('.') {
                     return None
                 }
 

@@ -57,13 +57,13 @@ pub fn encoding(header_value: Option<&header::AcceptEncoding>) -> Option<header:
         };
     }
 
-    let gzip_q = gzip_q.or(star_q).unwrap_or(header::q(0));
+    let gzip_q = gzip_q.or(star_q).unwrap_or_else(|| header::q(0));
 
     // If the representation has no content-coding, then it is
     // acceptable by default unless specifically excluded by the
     // Accept-Encoding field stating either "identity;q=0" or "*;q=0"
     // without a more specific entry for "identity".
-    let identity_q = identity_q.or(star_q).unwrap_or(header::q(1));
+    let identity_q = identity_q.or(star_q).unwrap_or_else(|| header::q(1));
 
     if gzip_q > header::q(0) && gzip_q >= identity_q {
         Some(header::Encoding::Gzip)

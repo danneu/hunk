@@ -47,7 +47,7 @@ fn handle_request_sync(
     };
 
     // Short-circuit if dotfile forbidden
-    if !dotfiles && entity_path.file_name().and_then(|x| x.to_str()).map(|x| x.starts_with(".")).unwrap_or(false) {
+    if !dotfiles && entity_path.file_name().and_then(|x| x.to_str()).map(|x| x.starts_with('.')).unwrap_or(false) {
         return (req, None)
     }
 
@@ -196,9 +196,9 @@ impl Service for Serve {
 
         let future = handle_request(
             self.pool,
-            &root,
+            root,
             req,
-            &dotfiles,
+            dotfiles,
         );
 
         Box::new(future.then(move |result| match result {
