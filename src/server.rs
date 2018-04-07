@@ -6,8 +6,9 @@ use futures::{Future, Stream};
 use futures_cpupool::CpuPool;
 use hyper::{Chunk, Client, server::Http};
 use leak::Leak;
-use tokio_core::{reactor::Core};
-use tokio::net::{TcpListener, TcpStream};
+use tokio_core::reactor::Core;
+use tokio::net::TcpListener;
+use hyper;
 
 use boot_message;
 use config::Config;
@@ -22,6 +23,7 @@ pub fn serve(config: &Config) {
     let mut core = Core::new().unwrap();
     let handle = core.handle();
 
+    // Leak all of our statics so they're easy to pass down the middleware chain.
     let handle = Box::new(handle).leak();
     let pool = Box::new(CpuPool::new(1)).leak();
     let config = Box::new(config.clone()).leak();
@@ -49,9 +51,8 @@ pub fn serve(config: &Config) {
         handle,
     };
 
-    let future = listener.incoming().for_each(move |socket: TcpStream| {
-        // TODO: When does socket.peer_addr() fail?
-        // TODO: Best way to handle it?
+    let future = listener.incoming().for_each(move |socket| {
+        // TODO: When does socket.peer_addr() fail and how should I handle it?
         let peer = match socket.peer_addr() {
             Err(e) => {
                 error!("failed to get peer addr from socket: {}", e);
@@ -63,8 +64,13 @@ pub fn serve(config: &Config) {
         let conn = http.serve_connection(socket, factory(peer.ip()))
             .map(|_| ())
             .map_err(|e| {
-                // Note: Very noisy (epipe)
-                 error!("server connection error: {}", e)
+                use std::io::ErrorKind::BrokenPipe;
+
+                // Silence noisy epipe errors
+                match e {
+                    hyper::Error::Io(ref e) if e.kind() == BrokenPipe => {},
+                    e => error!("server connection error: {}", e)
+                }
             });
 
         handle.spawn(conn);
