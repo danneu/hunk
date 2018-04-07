@@ -66,10 +66,11 @@ fn pretty_site(site: &Site) {
         match site.log {
             None => "off".to_string(),
             Some(_) => {
-                let mut s = format!("{}", "on".green().bold());
-                s.push(' ');
-                s.push_str(&format!("dst={}", "stdout".bold()));
-                s
+                format!(
+                    "{} to={}",
+                    "on".green().bold(),
+                    "stdout".bold(),
+                )
             }
         }
     );
@@ -77,15 +78,15 @@ fn pretty_site(site: &Site) {
     // SERVE
 
     println!(
-        "- serve:   {}",
+        "- serve:  {}",
         match site.serve {
             None => "off".to_string(),
             Some(Serve { ref root, dotfiles, browse }) => format!(
-                "{} {}{}{}",
+                "{} root=\"{}\"{}{}",
                 "on".green().bold(),
-                root.to_str().unwrap_or("").to_string().bright_white(),
-                if browse { " [browse]" } else { "" },
-                if dotfiles { " [dotfiles]" } else { "" }
+                root.to_str().unwrap_or("").to_string().bright_white().bold(),
+                if browse { " +browse" } else { "" }.bold(),
+                if dotfiles { " +dotfiles" } else { "" }.bold(),
             ),
         }
     );

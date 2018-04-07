@@ -125,7 +125,7 @@ impl<'de> serde::Deserialize<'de> for Site {
             cors: Option<Cors>,
         }
 
-        let input: Site_ = Site_::deserialize(deserializer)?;
+        let mut input: Site_ = Site_::deserialize(deserializer)?;
 
         // FIXME: This file is a mess.
         let url = match input.clone().url.map(|url| url.parse::<Url>()) {
@@ -143,6 +143,15 @@ impl<'de> serde::Deserialize<'de> for Site {
             Hosts_::Str(x) => vec![x],
             Hosts_::Arr(xs) => xs,
         };
+
+        // Canonicalize the root just so it's more helpful to see in the boot message.
+        // We don't care if canonicalize fails because we check the folder every request so
+        // even if the folder doesn't exist now, it can exist in the future.
+        if let Some(ref serve) = input.serve {
+            if let Ok(root) = serve.root.canonicalize() {
+                input.serve = Some(Serve { root, ..serve.clone() })
+            }
+        }
 
         Ok(Site {
             host,
