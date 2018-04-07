@@ -12,7 +12,7 @@ const CONFIG_TOML: &'static str = r#"
 
     [[site]]
     host = "localhost:3000"
-    serve = { root = "public", browse = true }
+    serve = { root = "examples/public", browse = true }
     log = {}
 "#;
 
