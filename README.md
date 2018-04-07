@@ -115,7 +115,13 @@ A config can specify any number of virtual hosts.
 
 ```toml
 [[site]]
-host = ""
+host = "localhost:3000"
+
+[[site]]
+host = "localhost:4000"
+
+[[site]]
+host = "localhost:5000"
 ```
 
 Required:
