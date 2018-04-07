@@ -1,0 +1,8 @@
+{
+    "extends": "eslint:recommended",
+    "plugins": [],
+    "env": {
+        "browser": true
+    },
+    "parserOptions": {}
+}

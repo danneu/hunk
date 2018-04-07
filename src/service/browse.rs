@@ -2,6 +2,7 @@ use std::fs;
 use std::io;
 use std::net::IpAddr;
 use std::path::Path;
+use std::time::UNIX_EPOCH;
 
 use futures::{Future, future::ok};
 use futures::{stream, Sink, Stream};
@@ -11,12 +12,15 @@ use hyper::{self, header, Chunk, Client, Method, Request, Response, client::Http
 
 use config::{self, Config, Site};
 use path;
+use mime;
 use response;
 use service;
+use util;
 
 // TODO: Generate ETag, Content-Length
 
 const CSS: &str = include_str!("../assets/browse.css");
+const JS: &str = include_str!("../assets/browse.js");
 
 pub struct Browse {
     pub config: &'static Config,
@@ -52,7 +56,11 @@ impl Service for Browse {
         // Short-circuit if root or browse opts are not set
         let (root, dotfiles) = match &site.serve {
             None => return next().call((site, req)),
-            Some(config::Serve { ref root, ref dotfiles, .. }) => (root, dotfiles),
+            Some(config::Serve {
+                ref root,
+                ref dotfiles,
+                ..
+            }) => (root, dotfiles),
         };
 
         // Only handle GET, OPTIONS, HEAD
@@ -62,13 +70,14 @@ impl Service for Browse {
             return Box::new(next().call((site, req)));
         }
 
-        let entity_path = match path::get_entity_path(root, req.path()) {
+        let entity_path = match path::get_entity_path(&root, req.path()) {
             None => return Box::new(ok(response::not_found())),
             Some(path) => path,
         };
 
-        let future =
-            Box::new(pool.spawn_fn(move || handle_folder(pool, root, entity_path.as_path(), dotfiles)));
+        let future = Box::new(pool.spawn_fn(move || {
+            handle_folder(pool, &root, entity_path.as_path(), &dotfiles)
+        }));
 
         Box::new(future.then(move |res| {
             match res {
@@ -90,9 +99,15 @@ struct FolderItem {
     filename: String,
     href: String,
     metadata: fs::Metadata,
+    is_image: bool,
 }
 
-fn handle_folder(pool: &CpuPool, root: &Path, path: &Path, dotfiles: &bool) -> io::Result<Response> {
+fn handle_folder(
+    pool: &CpuPool,
+    root: &Path,
+    path: &Path,
+    dotfiles: &bool,
+) -> io::Result<Response> {
     let (tx, body) = hyper::Body::pair();
 
     let mut entries: Vec<FolderItem> = fs::read_dir(path)?
@@ -106,8 +121,15 @@ fn handle_folder(pool: &CpuPool, root: &Path, path: &Path, dotfiles: &bool) -> i
 
                 // Skip dotfiles unless we want to serve them
                 if !dotfiles && filename.starts_with('.') {
-                    return None
+                    return None;
                 }
+
+                let is_image = entry
+                    .path()
+                    .extension()
+                    .and_then(|x| x.to_str())
+                    .map(|x| mime::is_image_ext(x))
+                    .unwrap_or(false);
 
                 let href = format!(
                     "/{}",
@@ -118,6 +140,7 @@ fn handle_folder(pool: &CpuPool, root: &Path, path: &Path, dotfiles: &bool) -> i
                     filename,
                     href,
                     metadata,
+                    is_image,
                 })
             })
         })
@@ -135,22 +158,28 @@ fn handle_folder(pool: &CpuPool, root: &Path, path: &Path, dotfiles: &bool) -> i
         .map(|path| format!("/{}", path));
 
     // e.g. "/", "/foo", "/foo/bar"
-    let relative_path = format!("/{}", path.strip_prefix(root).unwrap().to_string_lossy().to_string());
+    let relative_path = format!(
+        "/{}",
+        path.strip_prefix(root)
+            .unwrap()
+            .to_string_lossy()
+            .to_string()
+    );
 
     let stream = stream::iter_ok(vec![
-        Ok(Chunk::from(format!(r#"<!doctype html>
+        Ok(Chunk::from(format!(
+            r#"<!doctype html>
 <html lang="en">
 <meta charset="utf-8">
 <title>{}</title>
 <style>{}</style>
-<table><tr><th>Name<th>Size
+<table><tr><th>Name<th>Size<th>Created
 "#,
-            relative_path,
-            CSS
+            relative_path, CSS,
         ))),
         if let Some(parent_href) = parent_href {
             Ok(Chunk::from(format!(
-                "<tr><td><a class=\"fo\" href=\"{}\">..<td>—",
+                "<tr><td><a class=\"fo\" href=\"{}\">..<td>—<td>—",
                 parent_href
             )))
         } else {
@@ -159,17 +188,40 @@ fn handle_folder(pool: &CpuPool, root: &Path, path: &Path, dotfiles: &bool) -> i
     ]);
 
     let stream = stream.chain(stream::iter_ok(entries.into_iter().map(|item| {
-        let class = if item.metadata.is_dir() { "fo" } else { "fi" };
+        //        let class = if item.metadata.is_dir() { "fo" } else { "fi" };
+
+        let class = if item.metadata.is_dir() {
+            "fo"
+        } else if item.is_image {
+            "img"
+        } else {
+            "fi"
+        };
+
+        // string of millis since epoch
+        let created = {
+            let duration = item.metadata
+                .created()
+                .map_err(|_| ())
+                .and_then(|time| time.duration_since(UNIX_EPOCH).map_err(|_| ()))
+                .map(|dur| util::duration_as_millis(dur).to_string())
+                .map_err(|()| ());
+            duration.unwrap_or_else(|()| "—".to_string())
+        };
 
         let html = format!(
-            "\n<tr><td><a href=\"{href}\" class=\"{class}\">{filename}<td>{size}",
+            "\n<tr><td><a href=\"{href}\" class=\"{class}\">{filename}<td>{size}<td class=\"created\">{created}",
             href = item.href,
             filename = item.filename,
             class = class,
             size = if item.metadata.is_file() { item.metadata.len().to_string() } else { "—".to_string() },
+            created = created,
         );
         Ok(Chunk::from(html))
     })));
+
+    let js_chunk = Chunk::from(format!("<script>{}</script>", JS));
+    let stream = stream.chain(stream::iter_ok(vec![Ok(js_chunk)]));
 
     let future = tx.send_all(stream);
 

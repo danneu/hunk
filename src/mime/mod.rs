@@ -1,6 +1,7 @@
 use hyper::mime::{self, Mime};
 use std::path::Path;
 use unicase::Ascii;
+use std::collections::HashSet;
 
 #[macro_use]
 mod records;
@@ -11,6 +12,23 @@ mod records;
 pub struct MimeRecord {
     pub mime: Mime,
     pub compressible: bool,
+}
+
+
+pub fn is_image_ext(ext: &str) -> bool {
+    lazy_static! {
+        static ref IMAGE_EXTS: HashSet<Ascii<&'static str>> = {
+            hash_set![
+                Ascii::new("jpg"),
+                Ascii::new("jpeg"),
+                Ascii::new("gif"),
+                Ascii::new("bmp"),
+                Ascii::new("png"),
+            ]
+        };
+    }
+
+    IMAGE_EXTS.contains(&Ascii::new(ext))
 }
 
 pub fn is_mime_compressible(mime: &Mime) -> bool {
