@@ -78,7 +78,7 @@ pub struct Serve {
     pub dotfiles: bool,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Default)]
 pub struct Gzip {
     // Gzip: 0-9
     // We default 1 because it has the maximum compression to cpu ratio.

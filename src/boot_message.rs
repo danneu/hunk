@@ -97,7 +97,7 @@ pub fn pretty(config: &Config) {
 
     println!();
     println!(
-        "{} {} on {}",
+        "{} {} on http://{}",
         "[prox]".bright_white().bold(),
         "listening".bright_green().bold(),
         config

@@ -14,6 +14,10 @@ use path;
 use response;
 use service;
 
+// TODO: Generate ETag, Content-Length
+
+const CSS: &str = include_str!("../assets/browse.css");
+
 pub struct Browse {
     pub config: &'static Config,
     pub pool: &'static CpuPool,
@@ -88,8 +92,6 @@ struct FolderItem {
     metadata: fs::Metadata,
 }
 
-const CSS: &str = include_str!("../assets/browse.css");
-
 fn handle_folder(pool: &CpuPool, root: &Path, path: &Path, dotfiles: &bool) -> io::Result<Response> {
     let (tx, body) = hyper::Body::pair();
 
@@ -132,18 +134,23 @@ fn handle_folder(pool: &CpuPool, root: &Path, path: &Path, dotfiles: &bool) -> i
         .and_then(|path| path.to_str())
         .map(|path| format!("/{}", path));
 
+    // e.g. "/", "/foo", "/foo/bar"
+    let relative_path = format!("/{}", path.strip_prefix(root).unwrap().to_string_lossy().to_string());
+
     let stream = stream::iter_ok(vec![
-        Ok(Chunk::from(format!(
-            r#"<!doctype html>
+        Ok(Chunk::from(format!(r#"<!doctype html>
 <html lang="en">
 <meta charset="utf-8">
+<title>{}</title>
 <style>{}</style>
-<ul>"#,
+<table><tr><th>Name<th>Size
+"#,
+            relative_path,
             CSS
         ))),
         if let Some(parent_href) = parent_href {
             Ok(Chunk::from(format!(
-                "<li><a class=\"fo\" href=\"{}\">..",
+                "<tr><td><a class=\"fo\" href=\"{}\">..<td>—",
                 parent_href
             )))
         } else {
@@ -153,11 +160,13 @@ fn handle_folder(pool: &CpuPool, root: &Path, path: &Path, dotfiles: &bool) -> i
 
     let stream = stream.chain(stream::iter_ok(entries.into_iter().map(|item| {
         let class = if item.metadata.is_dir() { "fo" } else { "fi" };
+
         let html = format!(
-            "\n<li><a href=\"{href}\" class=\"{class}\">{filename}",
+            "\n<tr><td><a href=\"{href}\" class=\"{class}\">{filename}<td>{size}",
             href = item.href,
             filename = item.filename,
-            class = class
+            class = class,
+            size = if item.metadata.is_file() { item.metadata.len().to_string() } else { "—".to_string() },
         );
         Ok(Chunk::from(html))
     })));

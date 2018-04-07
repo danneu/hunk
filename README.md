@@ -14,6 +14,12 @@ A simple, hobby reverse proxy + asset server built with Rust.
 - [x] Static asset serving
 - [x] ETag / Conditional Get / Not Modified
 
+## Examples
+
+Check out the [examples folder](/examples).
+
+    RUST_LOG="prox" cargo run --example file_server
+
 ## Install
 
 Download the latest executable: <https://github.com/danneu/prox/releases/latest>.
@@ -54,9 +60,9 @@ bind = "localhost:3000"
 [[site]]
 host = "localhost:3000"
 serve = { root = "./public" }
-[site.browse]
-[site.gzip]
-[site.log]
+browse = {}
+gzip = {}
+log = {}
 ```
 
 Notice how `site.host` matches `server.bind`.
@@ -146,7 +152,7 @@ Optional:
         ```toml
         [[site]]
         host = "..."
-        [site.gzip] # Default gzip middleware
+        gzip = {} # Default gzip middleware
         ```
         
         ```toml
@@ -160,7 +166,7 @@ Optional:
     ```toml
     [[site]]
     # ...
-    [site.log]
+    log = {}
     ```
 
 - `cors` (object): Apply CORS <https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS> response headers to a site.

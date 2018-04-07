@@ -80,7 +80,7 @@ pub fn serve(config: &Config) {
     if atty::is(atty::Stream::Stdout) {
         boot_message::pretty(config);
     } else {
-        info!("[prox] listening on {}", config.server.bind);
+        info!("[prox] listening on http://{}", config.server.bind);
     }
 
     core.run(future).unwrap()
