@@ -14,7 +14,7 @@ pub struct MimeRecord {
     pub compressible: bool,
 }
 
-
+/// Determines if a file extension suggests an image that browsers natively support.
 pub fn is_image_ext(ext: &str) -> bool {
     lazy_static! {
         static ref IMAGE_EXTS: HashSet<Ascii<&'static str>> = {
@@ -31,10 +31,16 @@ pub fn is_image_ext(ext: &str) -> bool {
     IMAGE_EXTS.contains(&Ascii::new(ext))
 }
 
+/// Determines if mime suggest compressible data.
+///
+/// Many mime types like images and video are already compressed and should not be gzipped.
 pub fn is_mime_compressible(mime: &Mime) -> bool {
     records::COMPRESSIBLE_BY_MIME.contains(mime)
 }
 
+/// Guesses a file's mime type based on its file extensions.
+///
+/// Defaults to octet-stream.
 pub fn guess_mime_by_path(path: &Path) -> MimeRecord {
     path.extension()
         .and_then(|os| os.to_str())
