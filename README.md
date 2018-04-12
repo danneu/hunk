@@ -202,3 +202,8 @@ Optional:
 Crafting requests:
 
     echo -ne 'GET http://localhost:3000/a HTTP/1.1\r\nHost: example.com\r\nContent-Length: 5\r\n\r\nHello' | nc localhost 3000
+    
+Docs:
+
+    cargo doc --open
+    cargo watch -x 'doc'
