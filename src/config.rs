@@ -15,7 +15,10 @@ use host::Host;
 /// Configures the proxy server.
 #[derive(Deserialize, Debug, Clone, Default)]
 pub struct Config {
+    /// Top-level prox server config.
     pub server: Server,
+
+    /// The list of virtual host configurations to handle.
     #[serde(rename = "site")]
     #[serde(default)]
     pub sites: Vec<Site>,
@@ -24,12 +27,14 @@ pub struct Config {
 /// Configures top-level concerns like which port to bind to.
 #[derive(Debug, Clone)]
 pub struct Server {
+    /// Bind the prox server to this address.
     pub bind: SocketAddr,
     pub timeouts: Timeouts,
 }
 
 #[derive(Debug, Clone)]
 pub struct Timeouts {
+    /// The amount of time to wait for a site to start responding.
     pub connect: Duration,
 }
 
@@ -61,19 +66,40 @@ fn default_port() -> u32 {
 /// A Site tells prox how to handle requests that match the host.
 #[derive(Debug, Clone, Default)]
 pub struct Site {
+    /// The value of the request Host header that will map to this site.
     pub host: Vec<Host>,
+
+    /// Proxy requests to this url. Example: `http://localhost:3001`.
     pub url: Option<Url>,
+
+    /// Configure static-file serving.
     pub serve: Option<Serve>,
+
+    /// Configure response gzipping.
     pub gzip: Option<Gzip>,
+
+    /// Configure request/response logging.
     pub log: Option<Log>,
+
+    /// Configure CORS.
     pub cors: Option<Cors>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Serve {
+    /// The filesystem path to the folder to serve.
+    ///
+    /// May be relative or absolute.
+    ///
+    /// On each request, the request path will be looked up in the root folder.
+    /// If it exists, then the file is served. Else, the request is passed down the chain.
     pub root: PathBuf,
+
+    /// Show the folder browser UI. Default: `false`.
     #[serde(default)]
     pub browse: bool,
+
+    /// Show and serve files that start with dot ("."). Default: `false`.
     #[serde(default)]
     pub dotfiles: bool,
 }
@@ -83,6 +109,7 @@ pub struct Gzip {
     // Gzip: 0-9
     // We default 1 because it has the maximum compression to cpu ratio.
     // pub level: _,
+    /// The minimum file size that will be gzipped. Default: `1400`.
     #[serde(default = "default_gzip_threshold")]
     pub threshold: u64,
 }
